@@ -5,7 +5,7 @@ The backend follows a modular architecture:
 src/
 ├── config/          # Configuration files (database connections, environment variables)
 ├── controllers/     # Request handlers (processes input, calls services, sends responses)
-    ├── authController.j
+    ├── authController.js
 ├── middleware/      # Custom functions (authentication, error handling, validation)
     ├── validation.js
 ├── models/          # Database schemas and data definitions (SQL/NoSQL)
