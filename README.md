@@ -1,6 +1,7 @@
 # School-Inventory-Management-System
 ## 📂 Project Structure
-The backend follows a modular architecture: teest2
+The backend follows a modular architecture: test2
+
 ```text
 src/
 ├── config/          # Configuration files (database connections, environment variables)
