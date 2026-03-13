@@ -1,0 +1,15 @@
+### Test 1: Successful Status Update
+PUT http://localhost:5000/equipment/1/status
+Content-Type: application/json
+
+{
+  "status": "under repair"
+}
+
+### Test 2: Invalid Status (Should return 400)
+PUT http://localhost:5000/equipment/1/status
+Content-Type: application/json
+
+{
+  "status": "broken"
+}

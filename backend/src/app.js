@@ -5,7 +5,6 @@ const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const equipmentRoutes = require("./routes/equipmentRoutes");
 const errorHandler = require("./middleware/errorHandler");
-const equipmentRoutes = require('./routes/equipmentRoutes');
 
 
 const app = express();

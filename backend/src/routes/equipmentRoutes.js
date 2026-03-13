@@ -5,6 +5,6 @@ const equipmentController = require('../controllers/equipmentController');
 // Requirement: GET /equipment/{id}
 router.get('/:id', equipmentController.getEquipmentDetails);
 router.get('/equipment', equipmentController.getEquipment);
-
+router.put('/:id/status', equipmentController.updateStatus);
 
 module.exports = router;

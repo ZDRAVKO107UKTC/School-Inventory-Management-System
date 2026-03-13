@@ -8,7 +8,7 @@ const getEquipmentById = async (id) => {
 module.exports = {
     getEquipmentById,
 };
-const { Equipment } = require('../../models');
+//Tuk mahnah povtorniq declaration na { Equipment }
 const { Op } = require('sequelize');
 
 const getAllEquipment = async (filters) => {
@@ -31,3 +31,18 @@ const getAllEquipment = async (filters) => {
 };
 
 module.exports = { getAllEquipment };
+
+const updateEquipmentStatus = async (id, status) => {
+    const equipment = await getEquipmentById(id);
+    if (!equipment) {
+        return null;
+    }
+    equipment.status = status;
+    await equipment.save();
+    return equipment;
+}
+
+module.exports = {
+    getEquipmentById,
+    updateEquipmentStatus,
+}
