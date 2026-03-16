@@ -1,21 +1,14 @@
-const { Equipment } = require('../../models'); // Points to your models/index.js
-
-const getEquipmentById = async (id) => {
-    // findByPk is the Sequelize method for "Find By Primary Key"
-    return await Equipment.findByPk(id);
-};
-
-module.exports = {
-    getEquipmentById,
-};
 const { Equipment } = require('../../models');
 const { Op } = require('sequelize');
+
+const getEquipmentById = async (id) => {
+    return await Equipment.findByPk(id);
+};
 
 const getAllEquipment = async (filters) => {
     const { search, type, status } = filters;
     let whereClause = {};
 
-    // Търсене по име ИЛИ сериен номер (case-insensitive)
     if (search) {
         whereClause[Op.or] = [
             { name: { [Op.iLike]: `%${search}%` } },
@@ -23,11 +16,26 @@ const getAllEquipment = async (filters) => {
         ];
     }
 
-    // Филтър по точно съвпадение на тип или статус
     if (type) whereClause.type = type;
     if (status) whereClause.status = status;
 
     return await Equipment.findAll({ where: whereClause });
 };
 
-module.exports = { getAllEquipment };
+const createEquipment = async (data) => {
+    return await Equipment.create(data);
+};
+
+const updateEquipment = async (id, data) => {
+    const equipment = await Equipment.findByPk(id);
+    if (!equipment) return null;
+    
+    return await equipment.update(data);
+};
+
+module.exports = { 
+    getEquipmentById, 
+    getAllEquipment, 
+    createEquipment,
+    updateEquipment
+};

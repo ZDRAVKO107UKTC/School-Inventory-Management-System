@@ -5,20 +5,17 @@ const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const equipmentRoutes = require("./routes/equipmentRoutes");
 const errorHandler = require("./middleware/errorHandler");
-const equipmentRoutes = require('./routes/equipmentRoutes');
-
 
 const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
 
-app.use("/auth", authRoutes);
-app.use("/users", userRoutes);
-app.use("/admin", adminRoutes);
-app.use("/equipment", equipmentRoutes);
-
-app.use('/api', equipmentRoutes); // Така ще стане /api/equipment
+// Настройка на глобални префикси за всички маршрути
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api", equipmentRoutes); // Това покрива /api/equipment и /api/:id
 
 app.use(errorHandler);
 
