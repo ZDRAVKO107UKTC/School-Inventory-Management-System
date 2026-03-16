@@ -1,0 +1,50 @@
+### 1. REGISTER (Ensures Bcrypt hash is created by your code)
+# @name Register
+POST http://localhost:5000/auth/register
+Content-Type: application/json
+
+{
+  "username": "verified_teacher",
+  "email": "verified@school.edu",
+  "password": "correct_password",
+  "role": "teacher"
+}
+
+### -------------------------------------------------------------------------
+
+### 1. LOGIN
+# @name Login
+POST http://localhost:5000/auth/login
+Content-Type: application/json
+
+{
+  "email": "verified@school.edu",
+  "password": "correct_password"
+}
+
+> {%
+    // This MUST be inside these brackets to work in WebStorm
+    client.global.set("authToken", response.body.accessToken);
+%}
+
+### -------------------------------------------------------------------------
+
+### 2. SUBMIT BORROW REQUEST
+# @name Create_Request
+POST http://localhost:5000/request
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "equipment_id": 1,
+  "request_date": "2026-04-10",
+  "due_date": "2026-04-15",
+  "notes": "Testing the full verified chain."
+}
+
+### -------------------------------------------------------------------------
+
+### 3. VIEW MY REQUESTS
+# @name Get_My_Requests
+GET http://localhost:5000/request/my
+Authorization: Bearer {{authToken}}

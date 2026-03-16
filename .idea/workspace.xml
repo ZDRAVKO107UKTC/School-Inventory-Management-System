@@ -118,14 +118,24 @@
       <recent name="C:\Users\zdrav\WebstormProjects\School-Inventory-Management-System\backend" />
     </key>
   </component>
-  <component name="RunManager" selected="Node.js.server.js">
-    <configuration name="All in test_equipment" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" path="$PROJECT_DIR$/test_equipment.http">
+  <component name="RunDashboard">
+    <option name="configurationStatuses">
+      <map>
+        <entry key="HttpClient.HttpRequestRunConfigurationType">
+          <value>
+            <map>
+              <entry key="All in test" value="STOPPED" />
+            </map>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="RunManager" selected="HTTP Request.All in test">
+    <configuration name="All in test" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" path="$PROJECT_DIR$/test.http">
       <method v="2" />
     </configuration>
-    <configuration name="test_equipment | Test Get Existing Equipment" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$PROJECT_DIR$/test_equipment.http" executionIdentifier="Test Get Existing Equipment" runType="Run single request">
-      <method v="2" />
-    </configuration>
-    <configuration name="app.js" type="NodeJSConfigurationType" temporary="true" nameIsGenerated="true" path-to-js-file="$PROJECT_DIR$/backend/src/app.js" working-dir="$PROJECT_DIR$/backend/src">
+    <configuration name="requestController.js" type="NodeJSConfigurationType" temporary="true" nameIsGenerated="true" path-to-js-file="$PROJECT_DIR$/backend/src/controllers/requestController.js" working-dir="$PROJECT_DIR$/backend/src/controllers">
       <method v="2" />
     </configuration>
     <configuration name="server.js" type="NodeJSConfigurationType" temporary="true" nameIsGenerated="true" path-to-js-file="$PROJECT_DIR$/backend/server.js" working-dir="$PROJECT_DIR$/backend">
@@ -147,11 +157,10 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="HTTP Request.All in test" />
         <item itemvalue="Node.js.server.js" />
-        <item itemvalue="HTTP Request.test_equipment | Test Get Existing Equipment" />
-        <item itemvalue="HTTP Request.All in test_equipment" />
         <item itemvalue="Docker.backend: Compose Deployment" />
-        <item itemvalue="Node.js.app.js" />
+        <item itemvalue="Node.js.requestController.js" />
       </list>
     </recent_temporary>
   </component>
