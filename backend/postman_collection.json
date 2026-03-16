@@ -527,6 +527,31 @@
               "path": ["admin", "users", "5"]
             }
           }
+        },
+        {
+          "name": "Update User Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"teacher\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/2/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "2", "role"]
+            }
+          }
         }
       ]
     },

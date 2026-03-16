@@ -37,4 +37,11 @@ router.delete(
     }
 );
 
+router.put(
+    "/users/:id/role",
+    authenticateToken,
+    authorizeRoles("admin"),
+    adminController.updateUserRole
+);
+
 module.exports = router;
