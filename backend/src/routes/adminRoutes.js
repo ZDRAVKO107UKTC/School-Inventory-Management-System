@@ -3,6 +3,7 @@ const {
     authenticateToken,
     authorizeRoles,
 } = require("../middleware/authMiddleware");
+const adminController = require("../controllers/adminController");
 
 const router = express.Router();
 
@@ -16,6 +17,13 @@ router.get(
             user: req.user,
         });
     }
+);
+
+router.post(
+    "/users",
+    authenticateToken,
+    authorizeRoles("admin"),
+    adminController.createUser
 );
 
 router.delete(

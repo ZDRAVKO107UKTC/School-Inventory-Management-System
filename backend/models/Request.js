@@ -52,6 +52,14 @@ module.exports = (sequelize, DataTypes) => {
         model: 'users',
         key: 'id'
       }
+    },
+    return_condition: {
+      type: DataTypes.ENUM('new', 'good', 'fair', 'damaged'),
+      allowNull: true
+    },
+    return_notes: {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   }, {
     tableName: 'requests',
