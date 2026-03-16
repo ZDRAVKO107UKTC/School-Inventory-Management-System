@@ -15,6 +15,7 @@
       "value": "",
       "type": "string"
     },
+
     {
       "key": "refreshToken",
       "value": "",
@@ -208,9 +209,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/equipment/equipment",
+              "raw": "{{baseUrl}}/equipment",
               "host": ["{{baseUrl}}"],
-              "path": ["equipment", "equipment"]
+              "path": ["equipment"]
             }
           }
         },
@@ -220,9 +221,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/equipment/equipment?search=laptop",
+              "raw": "{{baseUrl}}/equipment?search=laptop",
               "host": ["{{baseUrl}}"],
-              "path": ["equipment", "equipment"],
+              "path": ["equipment"],
               "query": [
                 {
                   "key": "search",
@@ -238,9 +239,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/equipment/equipment?type=Laptop",
+              "raw": "{{baseUrl}}/equipment?type=Laptop",
               "host": ["{{baseUrl}}"],
-              "path": ["equipment", "equipment"],
+              "path": ["equipment"],
               "query": [
                 {
                   "key": "type",
@@ -256,9 +257,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/equipment/equipment?status=available",
+              "raw": "{{baseUrl}}/equipment?status=available",
               "host": ["{{baseUrl}}"],
-              "path": ["equipment", "equipment"],
+              "path": ["equipment"],
               "query": [
                 {
                   "key": "status",
@@ -274,9 +275,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/equipment/equipment?search=mac&status=available&condition=good",
+              "raw": "{{baseUrl}}/equipment?search=mac&status=available&condition=good",
               "host": ["{{baseUrl}}"],
-              "path": ["equipment", "equipment"],
+              "path": ["equipment"],
               "query": [
                 {
                   "key": "search",
@@ -291,6 +292,69 @@
                   "value": "good"
                 }
               ]
+            }
+          }
+        },
+        {
+          "name": "Delete Equipment by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipment/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["equipment", ":id"]
+            }
+          }
+        },
+        {
+          "name": "Create Equipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"MacBook Pro\",\n  \"type\": \"Laptop\",\n  \"serial_number\": \"MBP123456\",\n  \"condition\": \"good\",\n  \"status\": \"available\",\n  \"location\": \"Room 101\",\n  \"photo_url\": \"https://example.com/photo.jpg\",\n  \"quantity\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/equipment",
+              "host": ["{{baseUrl}}"],
+              "path": ["equipment"]
+            }
+          }
+        },
+        {
+          "name": "Update Equipment Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"checked_out\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/equipment/1/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["equipment", "1", "status"]
             }
           }
         }

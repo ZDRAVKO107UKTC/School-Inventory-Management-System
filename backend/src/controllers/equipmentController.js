@@ -76,6 +76,30 @@ const deleteEquipment = async (req, res) => {
 
 const createEquipment = async (req, res) => {
     try {
+        const { name, type, condition, quantity } = req.body;
+
+        // Validate required fields
+        if (!name || !type || !condition || quantity === undefined) {
+            return res.status(400).json({
+                message: "Missing required fields: name, type, condition, quantity"
+            });
+        }
+
+        // Validate condition
+        const validConditions = ['new', 'good', 'fair', 'damaged'];
+        if (!validConditions.includes(condition)) {
+            return res.status(400).json({
+                message: `Invalid condition. Allowed values: ${validConditions.join(', ')}`
+            });
+        }
+
+        // Validate quantity
+        if (quantity < 0) {
+            return res.status(400).json({
+                message: "Quantity must be a non-negative number"
+            });
+        }
+
         const equipment = await equipmentService.createEquipment(req.body);
 
         return res.status(201).json({
