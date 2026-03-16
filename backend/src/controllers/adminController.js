@@ -60,4 +60,35 @@ const createUser = async (req, res) => {
     }
 };
 
-module.exports = { createUser };
+const updateUserRole = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+        const validRoles = ['student', 'teacher', 'admin'];
+        if (!role || !validRoles.includes(role)) {
+            return res.status(400).json({ message: `Invalid role. Allowed values: ${validRoles.join(', ')}` });
+        }
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const oldRole = user.role;
+        user.role = role;
+        await user.save();
+        // Audit log
+        console.log(`[AUDIT] Admin ${req.user.userId} changed role of user ${user.id} from ${oldRole} to ${role} at ${new Date().toISOString()}`);
+        return res.status(200).json({
+            message: 'User role updated successfully',
+            user: {
+                id: user.id,
+                username: user.username,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Error updating user role:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+module.exports = { createUser, updateUserRole };
