@@ -4,16 +4,9 @@ const getEquipmentDetails = async (req, res) => {
     try {
         const {id} = req.params;
         const equipment = await equipmentService.getEquipmentById(id);
-
-        if (!equipment) {
-            return res.status(404).json({
-                message: `Equipment with ID ${id} not found`
-            });
-        }
-
+        if (!equipment) return res.status(404).json({ message: `Equipment with ID ${id} not found` });
         return res.status(200).json(equipment);
     } catch (error) {
-        console.error("Error fetching equipment:", error);
         return res.status(500).json({message: "Internal Server Error"});
     }
 };
@@ -32,25 +25,10 @@ const updateStatus = async (req, res) => {
     try {
         const {id} = req.params;
         const {status} = req.body;
-
-        // Acceptance Criteria: Only valid statuses allowed
-        const validStatuses = ['available', 'checked_out', 'under_repair', 'retired'];
-
-        if (!validStatuses.includes(status)) {
-            return res.status(400).json({
-                message: `Invalid status. Allowed values: ${validStatuses.join(', ')}`
-            });
-        }
-
         const updatedEquipment = await equipmentService.updateEquipmentStatus(id, status);
-
-        if (!updatedEquipment) {
-            return res.status(404).json({message: `Equipment with ID ${id} not found`});
-        }
-
+        if (!updatedEquipment) return res.status(404).json({message: "Not found"});
         return res.status(200).json(updatedEquipment);
     } catch (error) {
-        console.error("Error updating status:", error);
         return res.status(500).json({message: "Internal Server Error"});
     }
 };
@@ -58,19 +36,41 @@ const updateStatus = async (req, res) => {
 const deleteEquipment = async (req, res) => {
     try {
         const {id} = req.params;
-        const result = await equipmentService.deleteEquipment(id);
-
-        if (!result) {
-            return res.status(404).json({message: `Equipment with ID ${id} not found`});
-        }
-
-        return res.status(200).json({message: `Equipment with ID ${id} deleted successfully`});
+        await equipmentService.deleteEquipment(id);
+        return res.status(200).json({message: "Deleted successfully"});
     } catch (error) {
-        if (error.message === 'Cannot delete equipment that is not retired') {
-            return res.status(400).json({message: error.message});
-        }
-        console.error("Error deleting equipment:", error);
-        return res.status(500).json({message: "Internal Server Error"});
+        return res.status(500).json({message: error.message});
+    }
+};
+
+const getMyRequests = async (req, res) => {
+    try {
+        const userId = req.user.id || req.user.userId; 
+        const requests = await equipmentService.getUserRequests(userId);
+        return res.status(200).json(requests);
+    } catch (error) {
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+const getAdminRequests = async (req, res) => {
+    try {
+        const filters = req.query;
+        const requests = await equipmentService.getAllRequestsAdmin(filters);
+        return res.status(200).json(requests);
+    } catch (error) {
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+const submitRequest = async (req, res) => {
+    try {
+        const { equipment_id, notes } = req.body;
+        const user_id = req.user.id || req.user.userId;
+        const newRequest = await equipmentService.createRequest({ user_id, equipment_id, notes });
+        return res.status(201).json(newRequest);
+    } catch (error) {
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 };
 
@@ -79,5 +79,7 @@ module.exports = {
     getEquipment,
     updateStatus,
     deleteEquipment,
-
+    getMyRequests,
+    getAdminRequests,
+    submitRequest
 }
