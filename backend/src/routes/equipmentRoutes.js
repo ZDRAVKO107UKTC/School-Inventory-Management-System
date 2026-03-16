@@ -3,7 +3,8 @@ const router = express.Router();
 const equipmentController = require('../controllers/equipmentController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 
-// СТАТИЧНИ
+// Публични маршрути
+router.post('/', authenticateToken, authorizeRoles("admin"), equipmentController.createEquipment);
 router.get('/', equipmentController.getEquipment);
 router.get('/my-requests', authenticateToken, equipmentController.getMyRequests);
 router.get('/manager/requests', authenticateToken, authorizeRoles("admin"), equipmentController.getAdminRequests);

@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const db = require("../../models");
+const { Op } = require("sequelize");
 const { User, RefreshToken } = db;
 
 const SALT_ROUNDS = 10;
@@ -117,20 +118,10 @@ const loginUser = async ({ email, username, password }) => {
 
     if (email) {
         const normalizedEmail = email.trim().toLowerCase();
-        if (!isValidEmail(normalizedEmail)) {
-            const error = new Error("Invalid email format");
-            error.statusCode = 400;
-            throw error;
-        }
-        whereClause.email = normalizedEmail;
+        whereClause.email = { [Op.iLike]: normalizedEmail };
     } else {
         const trimmedUsername = username.trim();
-        if (!isValidUsername(trimmedUsername)) {
-            const error = new Error("Invalid username format");
-            error.statusCode = 400;
-            throw error;
-        }
-        whereClause.username = trimmedUsername;
+        whereClause.username = { [Op.iLike]:trimmedUsername };
     }
 
     const user = await User.findOne({ where: whereClause });
