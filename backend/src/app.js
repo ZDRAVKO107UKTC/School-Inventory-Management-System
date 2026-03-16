@@ -6,6 +6,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const equipmentRoutes = require("./routes/equipmentRoutes");
 const errorHandler = require("./middleware/errorHandler");
 
+
 const app = express();
 
 app.use(express.json());

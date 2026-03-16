@@ -5,22 +5,6 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authMiddlew
 
 // Публични маршрути
 router.get('/equipment', equipmentController.getEquipment);
-router.get('/:id', equipmentController.getEquipmentDetails);
-
-// Admin-only маршрути
-router.post(
-    '/equipment', 
-    authenticateToken, 
-    authorizeRoles('admin'), 
-    equipmentController.createEquipment
-);
-
-// BE-011: Обновяване на техника
-router.put(
-    '/:id', 
-    authenticateToken, 
-    authorizeRoles('admin'), 
-    equipmentController.updateEquipment
-);
+router.put('/:id/status', equipmentController.updateStatus);
 
 module.exports = router;

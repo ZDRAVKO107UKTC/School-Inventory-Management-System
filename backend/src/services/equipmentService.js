@@ -5,6 +5,12 @@ const getEquipmentById = async (id) => {
     return await Equipment.findByPk(id);
 };
 
+module.exports = {
+    getEquipmentById,
+};
+//Tuk mahnah povtorniq declaration na { Equipment }
+const { Op } = require('sequelize');
+
 const getAllEquipment = async (filters) => {
     const { search, type, status } = filters;
     let whereClause = {};
