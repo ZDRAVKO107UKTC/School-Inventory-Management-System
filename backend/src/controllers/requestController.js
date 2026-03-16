@@ -29,6 +29,9 @@ const submitRequest = async (req, res) => {
 
         res.status(201).json(newRequest);
     } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
         console.error("Request Error:", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
@@ -43,4 +46,75 @@ const getUserRequests = async (req, res) => {
     }
 };
 
-module.exports = { submitRequest, getUserRequests };
+const approveRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const approverId = req.user.userId; // Assuming req.user has userId
+
+        const request = await requestService.approveRequest(id, approverId);
+
+        return res.status(200).json({
+            message: 'Request approved successfully',
+            request
+        });
+    } catch (error) {
+        if (error.message === 'Request not found') {
+            return res.status(404).json({ message: error.message });
+        }
+        if (error.message === 'Only pending requests can be approved' || error.message === 'Equipment is no longer available') {
+            return res.status(400).json({ message: error.message });
+        }
+        console.error('Error approving request:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+const rejectRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body; // Optional rejection reason
+        const rejectorId = req.user.userId;
+
+        const request = await requestService.rejectRequest(id, rejectorId, reason);
+
+        return res.status(200).json({
+            message: 'Request rejected successfully',
+            request
+        });
+    } catch (error) {
+        if (error.message === 'Request not found') {
+            return res.status(404).json({ message: error.message });
+        }
+        if (error.message === 'Only pending requests can be rejected') {
+            return res.status(400).json({ message: error.message });
+        }
+        console.error('Error rejecting request:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+const returnRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { condition, notes } = req.body; // Return condition and notes
+        const userId = req.user.userId;
+
+        const request = await requestService.returnRequest(id, userId, condition, notes);
+
+        return res.status(200).json({
+            message: 'Request returned successfully',
+            request
+        });
+    } catch (error) {
+        if (error.message === 'Request not found') {
+            return res.status(404).json({ message: error.message });
+        }
+        if (error.message === 'Only approved requests can be returned' || error.message === 'You can only return your own requests') {
+            return res.status(400).json({ message: error.message });
+        }
+        console.error('Error returning request:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+module.exports = { submitRequest, getUserRequests, approveRequest, rejectRequest, returnRequest };

@@ -30,7 +30,96 @@ const getMyRequests = async (userId) => {
     });
 };
 
+const approveRequest = async (requestId, approverId) => {
+    const request = await Request.findByPk(requestId, {
+        include: [{ model: Equipment, as: 'equipment' }]
+    });
+
+    if (!request) {
+        throw new Error('Request not found');
+    }
+
+    if (request.status !== 'pending') {
+        throw new Error('Only pending requests can be approved');
+    }
+
+    // Recheck equipment availability
+    if (request.equipment.status !== 'available') {
+        throw new Error('Equipment is no longer available');
+    }
+
+    // Update request status to approved
+    request.status = 'approved';
+    request.approved_by = approverId;
+    await request.save();
+
+    // Update equipment status to checked_out
+    request.equipment.status = 'checked_out';
+    await request.equipment.save();
+
+    return request;
+};
+
+const rejectRequest = async (requestId, rejectorId, reason) => {
+    const request = await Request.findByPk(requestId);
+
+    if (!request) {
+        throw new Error('Request not found');
+    }
+
+    if (request.status !== 'pending') {
+        throw new Error('Only pending requests can be rejected');
+    }
+
+    // Update request status to rejected
+    request.status = 'rejected';
+    if (reason) {
+        request.notes = reason; // Store rejection reason in notes
+    }
+    await request.save();
+
+    return request;
+};
+
+const returnRequest = async (requestId, userId, condition, notes) => {
+    const request = await Request.findByPk(requestId, {
+        include: [{ model: Equipment, as: 'equipment' }]
+    });
+
+    if (!request) {
+        throw new Error('Request not found');
+    }
+
+    if (request.user_id !== userId) {
+        throw new Error('You can only return your own requests');
+    }
+
+    if (request.status !== 'approved') {
+        throw new Error('Only approved requests can be returned');
+    }
+
+    // Update request status to returned
+    request.status = 'returned';
+    request.return_date = new Date();
+    if (condition) {
+        request.return_condition = condition;
+    }
+    if (notes) {
+        request.return_notes = notes;
+    }
+    await request.save();
+
+    // Update equipment status to available
+    request.equipment.status = 'available';
+    await request.equipment.save();
+
+    return request;
+};
+
 module.exports = {
     createBorrowRequest,
-    getMyRequests
+    getMyRequests,
+    approveRequest,
+    rejectRequest,
+    returnRequest
 };
