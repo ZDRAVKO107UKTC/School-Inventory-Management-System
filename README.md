@@ -16,7 +16,7 @@ A comprehensive inventory management system for schools built with Node.js, Expr
 ---
 ## Project Structure
 The backend follows a modular, scalable architecture:
-`
+``` 
 backend/
 ├── config/              # Configuration files
 │   ├── config.js       # Environment configuration
