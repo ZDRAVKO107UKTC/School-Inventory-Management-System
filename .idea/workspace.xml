@@ -5,10 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="98e050de-4084-4ab4-b303-e143b3da6b6e" name="Changes" comment="Document API request examples in `API_REQUESTS.md`.">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/postman_collection.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/postman_collection.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/controllers/adminController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/controllers/adminController.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/routes/adminRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/routes/adminRoutes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -171,7 +168,7 @@
       <workItem from="1773335835721" duration="3539000" />
       <workItem from="1773646039312" duration="118000" />
       <workItem from="1773646217742" duration="1358000" />
-      <workItem from="1773694522894" duration="6967000" />
+      <workItem from="1773694522894" duration="7271000" />
     </task>
     <task id="LOCAL-00001" summary="working auth">
       <option name="closed" value="true" />
