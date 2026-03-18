@@ -129,6 +129,14 @@ const returnRequest = async (requestId, userId, condition, notes) => {
     }
     await request.save();
 
+    await ReturnConditionLog.create({
+        request_id: request.id,
+        equipment_id: request.equipment_id,
+        condition,
+        notes: notes || null,
+        recorded_at: request.return_date
+    });
+
     // Restore returned inventory and keep the latest reported condition.
     request.equipment.quantity += request.quantity;
     request.equipment.status = 'available';

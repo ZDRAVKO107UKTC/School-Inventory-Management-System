@@ -107,6 +107,13 @@ const returnRequest = async (req, res) => {
         const {id} = req.params;
         const {condition, notes} = req.body; // Return condition and notes
         const userId = req.user.userId;
+        const validConditions = ['new', 'good', 'fair', 'damaged'];
+
+        if (!condition || !validConditions.includes(condition)) {
+            return res.status(400).json({
+                message: `Valid return condition is required. Allowed values: ${validConditions.join(', ')}`
+            });
+        }
 
         const request = await requestService.returnRequest(id, userId, condition, notes);
 
