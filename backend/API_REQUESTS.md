@@ -145,6 +145,8 @@ Header:
 Authorization: Bearer <admin-access-token>
 ```
 
+The backend also accepts a trailing slash here if your client sends `/request/1/condition-history/`.
+
 ## Get Equipment Condition History
 
 `GET /equipment/1/condition-history`
@@ -154,3 +156,5 @@ Header:
 ```text
 Authorization: Bearer <admin-access-token>
 ```
+
+The backend also accepts a trailing slash here if your client sends `/equipment/1/condition-history/`.

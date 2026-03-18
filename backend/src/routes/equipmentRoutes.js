@@ -6,6 +6,7 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authMiddlew
 router.post('/', authenticateToken, authorizeRoles('admin'), equipmentController.createEquipment);
 router.get('/', equipmentController.getEquipment);
 router.get('/:id/condition-history', authenticateToken, authorizeRoles('admin'), equipmentController.getConditionHistory);
+router.get('/:id/condition-history/', authenticateToken, authorizeRoles('admin'), equipmentController.getConditionHistory);
 router.get('/:id', equipmentController.getEquipmentDetails);
 router.put('/:id/status', authenticateToken, equipmentController.updateStatus);
 router.delete('/:id', authenticateToken, authorizeRoles('admin'), equipmentController.deleteEquipment);

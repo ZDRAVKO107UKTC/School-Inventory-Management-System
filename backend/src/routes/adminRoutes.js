@@ -30,11 +30,7 @@ router.delete(
     "/users/:id",
     authenticateToken,
     authorizeRoles("admin"),
-    (req, res) => {
-        return res.status(200).json({
-            message: `Admin is allowed to delete user with id ${req.params.id}`,
-        });
-    }
+    adminController.deleteUser
 );
 
 router.put(

@@ -20,6 +20,8 @@ Base URL: `http://localhost:5000`
 - `DELETE /admin/users/:id`
 - `PUT /admin/users/:id/role`
 
+`DELETE /admin/users/:id` can delete users of any role, including other admins.
+
 ## Equipment
 
 - `GET /equipment`
