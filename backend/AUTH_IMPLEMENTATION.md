@@ -1,121 +1,97 @@
 # Authentication Implementation
 
 ## Overview
-This project uses **JWT-based authentication with refresh tokens** for secure user authentication.
 
-## Token Strategy
+The backend uses JWT access tokens plus database-backed refresh tokens.
 
-### Access Tokens (Short-lived)
-- **Expiration**: 15 minutes (configurable via `JWT_ACCESS_EXPIRES_IN`)
-- **Purpose**: Authenticate API requests
-- **Storage**: Client-side (memory or localStorage)
-- **Included in**: Authorization header as `Bearer <token>`
+- Access tokens are signed with `JWT_SECRET`
+- Refresh tokens are random opaque strings stored in `refresh_tokens`
+- The refresh token is returned as an `httpOnly` cookie on login
 
-### Refresh Tokens (Long-lived)
-- **Expiration**: 7 days
-- **Purpose**: Obtain new access tokens without re-login
-- **Storage**: Database (`refresh_tokens` table) + httpOnly cookie
-- **Security**: Cryptographically random, not JWT
+## Current Endpoints
 
-## API Endpoints
+### `POST /auth/register`
 
-### POST `/auth/register`
-Register a new user.
+Registers a user with:
 
-**Request:**
 ```json
 {
   "username": "john_doe",
   "email": "john@example.com",
   "password": "password123",
-  "role": "student"  // optional: student, teacher, admin
+  "role": "student"
 }
 ```
 
-### POST `/auth/login`
-Login and receive tokens.
+`role` is optional and defaults to `student`.
 
-**Request:**
+### `POST /auth/login`
+
+Accepts either email or username:
+
 ```json
 {
-  "email": "john@example.com",  // or "username": "john_doe"
+  "email": "john@example.com",
   "password": "password123"
 }
 ```
 
-**Response:**
+or
+
+```json
+{
+  "username": "john_doe",
+  "password": "password123"
+}
+```
+
+Returns:
+
 ```json
 {
   "message": "Login successful",
-  "accessToken": "eyJhbGc...",
+  "accessToken": "jwt-access-token",
   "user": {
     "id": 1,
     "username": "john_doe",
     "email": "john@example.com",
-    "role": "student"
+    "role": "student",
+    "createdAt": "2026-03-18T12:00:00.000Z"
   }
 }
 ```
 
-**Note**: Refresh token is set as httpOnly cookie automatically.
+### `POST /auth/refresh`
 
-### POST `/auth/refresh`
-Get a new access token using refresh token.
+Uses the refresh token from the `refreshToken` cookie or from the request body:
 
-**Request:** (refresh token from cookie, or in body)
 ```json
 {
-  "refreshToken": "abc123..."  // optional if cookie is present
+  "refreshToken": "opaque-refresh-token"
 }
 ```
 
-**Response:**
-```json
-{
-  "message": "Token refreshed successfully",
-  "accessToken": "eyJhbGc...",
-  "user": { ... }
-}
-```
+Returns a new access token for the same session.
 
-### POST `/auth/logout`
-Invalidate refresh token and logout.
+### `POST /auth/logout`
 
-**Request:** (refresh token from cookie, or in body)
-```json
-{
-  "refreshToken": "abc123..."  // optional if cookie is present
-}
-```
+Deletes the refresh token from the database and clears the cookie.
 
-## How It Works
+## Token Behavior
 
-1. **Login**: User logs in → receives short-lived access token + long-lived refresh token
-2. **API Calls**: Client includes access token in requests
-3. **Token Expiry**: When access token expires (15 min), client uses refresh token to get new access token
-4. **Logout**: Refresh token is deleted from database
-5. **Cleanup**: Expired refresh tokens are automatically cleaned up every hour
-
-## Security Features
-
-✅ Short-lived access tokens (15 minutes)
-✅ Refresh tokens stored in database (can be revoked)
-✅ httpOnly cookies for refresh tokens (prevents XSS)
-✅ Automatic cleanup of expired tokens
-✅ No token blacklist needed (tokens expire quickly)
-
-## Migration
-
-Run migrations to create necessary tables:
-```bash
-cd backend
-npx sequelize-cli db:migrate
-```
+- Access token expiry is controlled by `JWT_ACCESS_EXPIRES_IN` and defaults to `15m`
+- Refresh tokens currently expire after 7 days
+- Refresh tokens are cleaned up hourly by `src/jobs/tokenCleanup.js`
+- Refresh currently returns a new access token but does not rotate the refresh token
 
 ## Environment Variables
 
 ```env
 JWT_SECRET=your_secret_key
 JWT_ACCESS_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=school_inventory
+DB_USER=postgres
+DB_PASSWORD=postgres123
 ```

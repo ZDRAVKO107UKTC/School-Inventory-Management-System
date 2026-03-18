@@ -43,7 +43,7 @@ const login = async (req, res, next) => {
 const refresh = async (req, res, next) => {
     try {
         // Get refresh token from cookie or request body
-        const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+        const refreshToken = req.cookies.refreshToken || req.body?.refreshToken;
 
         if (!refreshToken) {
             return res.status(401).json({
@@ -66,7 +66,7 @@ const refresh = async (req, res, next) => {
 const logout = async (req, res, next) => {
     try {
         // Get refresh token from cookie or request body
-        const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+        const refreshToken = req.cookies.refreshToken || req.body?.refreshToken;
 
         if (!refreshToken) {
             return res.status(401).json({

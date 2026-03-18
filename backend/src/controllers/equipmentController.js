@@ -36,9 +36,15 @@ const updateStatus = async (req, res) => {
 const deleteEquipment = async (req, res) => {
     try {
         const {id} = req.params;
-        await equipmentService.deleteEquipment(id);
+        const deleted = await equipmentService.deleteEquipment(id);
+        if (!deleted) {
+            return res.status(404).json({message: "Equipment not found"});
+        }
         return res.status(200).json({message: "Deleted successfully"});
     } catch (error) {
+        if (error.message === 'Cannot delete equipment that is not retired') {
+            return res.status(400).json({message: error.message});
+        }
         return res.status(500).json({message: error.message});
     }
 };

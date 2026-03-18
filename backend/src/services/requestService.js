@@ -8,17 +8,32 @@ const createBorrowRequest = async (requestData) => {
         throw error;
     }
 
-    // Since 'is_sensitive' doesn't exist in your model yet,
-    // we default to 'pending' to be safe, or you can add the column later.
-    const initialStatus = 'pending';
+    if (equipment.status !== 'available') {
+        const error = new Error("Equipment is not available for borrowing");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (!Number.isInteger(requestData.quantity) || requestData.quantity < 1) {
+        const error = new Error("Quantity must be a positive integer");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (requestData.quantity > equipment.quantity) {
+        const error = new Error("Requested quantity exceeds available inventory");
+        error.statusCode = 400;
+        throw error;
+    }
 
     return await Request.create({
         user_id: requestData.user_id,
         equipment_id: requestData.equipment_id,
+        quantity: requestData.quantity,
         request_date: requestData.request_date,
         due_date: requestData.due_date,
         notes: requestData.notes,
-        status: initialStatus
+        status: 'pending'
     });
 };
 
@@ -48,13 +63,18 @@ const approveRequest = async (requestId, approverId) => {
         throw new Error('Equipment is no longer available');
     }
 
+    if (request.quantity > request.equipment.quantity) {
+        throw new Error('Requested quantity exceeds available inventory');
+    }
+
     // Update request status to approved
     request.status = 'approved';
     request.approved_by = approverId;
     await request.save();
 
-    // Update equipment status to checked_out
-    request.equipment.status = 'checked_out';
+    // Reduce available inventory and mark the item checked out only when stock reaches zero.
+    request.equipment.quantity -= request.quantity;
+    request.equipment.status = request.equipment.quantity === 0 ? 'checked_out' : 'available';
     await request.equipment.save();
 
     return request;
@@ -109,8 +129,12 @@ const returnRequest = async (requestId, userId, condition, notes) => {
     }
     await request.save();
 
-    // Update equipment status to available
+    // Restore returned inventory and keep the latest reported condition.
+    request.equipment.quantity += request.quantity;
     request.equipment.status = 'available';
+    if (condition) {
+        request.equipment.condition = condition;
+    }
     await request.equipment.save();
 
     return request;

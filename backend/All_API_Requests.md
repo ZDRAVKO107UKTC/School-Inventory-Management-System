@@ -2,56 +2,49 @@
 
 Base URL: `http://localhost:5000`
 
-## User Roles and Permissions
+## Authentication
 
-The system has three user roles with different permissions:
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/refresh`
+- `POST /auth/logout`
 
-### Student
-- View equipment (public)
-- Submit equipment requests
-- View their own requests
-- Return equipment they borrowed
+## User
 
-### Teacher
-- All student permissions
-- Approve/reject equipment requests (can act as department approvers)
+- `GET /users/profile`
 
-### Admin
-- All permissions
-- Create/delete users
-- Create/delete equipment
-- Approve/reject equipment requests
-- Access admin dashboard
+## Admin
 
-## Authentication Endpoints
+- `GET /admin/dashboard`
+- `POST /admin/users`
+- `DELETE /admin/users/:id`
+- `PUT /admin/users/:id/role`
 
-- **POST** `/auth/register`
-- **POST** `/auth/login`
-- **POST** `/auth/refresh`
-- **POST** `/auth/logout`
+## Equipment
 
-## User Endpoints
+- `GET /equipment`
+- `GET /equipment/:id`
+- `POST /equipment`
+- `PUT /equipment/:id/status`
+- `DELETE /equipment/:id`
 
-- **GET** `/users/profile`
+Supported `/equipment` query params:
 
-## Equipment Endpoints
+- `search`
+- `type`
+- `status`
+- `condition`
 
-- **POST** `/equipment` (Admin only)
-- **GET** `/equipment/:id`
-- **GET** `/equipment` (with optional query parameters: search, type, status, condition)
-- **PUT** `/equipment/:id/status`
-- **DELETE** `/equipment/:id` (Admin only)
+## Requests
 
-## Admin Endpoints
+- `POST /request`
+- `GET /request/my`
+- `PUT /request/:id/approve`
+- `PUT /request/:id/reject`
+- `PUT /request/:id/return`
 
-- **GET** `/admin/dashboard` (Admin only)
-- **POST** `/admin/users` (Admin only)
-- **DELETE** `/admin/users/:id` (Admin only)
+### Roles
 
-## Request Endpoints
-
-- **POST** `/request` (Authenticated)
-- **GET** `/request/my` (Authenticated)
-- **PUT** `/request/{id}/approve` (Admin or Teacher)
-- **PUT** `/request/{id}/reject` (Admin or Teacher)
-- **PUT** `/request/{id}/return` (Authenticated)
+- `student`: can create requests, view their own requests, and return their own approved requests
+- `teacher`: same as student plus approve/reject requests
+- `admin`: full access, including user and equipment management plus approve/reject requests

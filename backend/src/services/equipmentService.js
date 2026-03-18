@@ -6,18 +6,20 @@ const getEquipmentById = async (id) => {
 };
 
 const getAllEquipment = async (filters) => {
-    const { search, type, status } = filters;
+    const { search, type, status, condition } = filters;
     let whereClause = {};
 
     if (search) {
         whereClause[Op.or] = [
             { name: { [Op.iLike]: `%${search}%` } },
+            { type: { [Op.iLike]: `%${search}%` } },
             { serial_number: { [Op.iLike]: `%${search}%` } }
         ];
     }
 
     if (type) whereClause.type = type;
     if (status) whereClause.status = status;
+    if (condition) whereClause.condition = condition;
 
     return await Equipment.findAll({ where: whereClause });
 };

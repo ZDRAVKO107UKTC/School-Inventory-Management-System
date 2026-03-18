@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "School Inventory Management API",
-    "description": "Complete API collection for School Inventory Management System",
+    "description": "Postman collection aligned with the current backend routes and payloads.\n\nAuthentication note:\n- /auth/login returns the access token in JSON and sets the refresh token as an httpOnly cookie.\n- In Postman, keep the cookie jar enabled for /auth/refresh and /auth/logout to work without manually pasting a refresh token.\n- The refreshToken body field is optional fallback input when you already have the token value from another client.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -15,10 +15,24 @@
       "value": "",
       "type": "string"
     },
-
     {
       "key": "refreshToken",
       "value": "",
+      "type": "string"
+    },
+    {
+      "key": "equipmentId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "requestId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "1",
       "type": "string"
     }
   ],
@@ -27,7 +41,7 @@
       "name": "Authentication",
       "item": [
         {
-          "name": "Register User",
+          "name": "Register Student",
           "request": {
             "method": "POST",
             "header": [
@@ -42,8 +56,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
             }
           }
         },
@@ -63,8 +82,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
             }
           }
         },
@@ -84,25 +108,20 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
             }
           }
         },
         {
           "name": "Login with Email",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = pm.response.json();",
-                  "pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);"
-                ]
-              }
-            }
-          ],
           "request": {
+            "description": "Logs in with email/password. This response sets the refresh token in the Postman cookie jar and returns the access token in JSON.",
             "method": "POST",
             "header": [
               {
@@ -116,25 +135,34 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
             }
-          }
-        },
-        {
-          "name": "Login with Username",
+          },
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "var jsonData = pm.response.json();",
-                  "pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);"
-                ]
+                  "if (jsonData.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Login with Username",
           "request": {
+            "description": "Logs in with username/password. This also sets the refresh token cookie used by refresh and logout.",
             "method": "POST",
             "header": [
               {
@@ -148,10 +176,29 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Login as Teacher",
@@ -161,8 +208,11 @@
               "script": {
                 "exec": [
                   "var jsonData = pm.response.json();",
-                  "pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);"
-                ]
+                  "if (jsonData.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -180,8 +230,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
             }
           }
         },
@@ -193,8 +248,11 @@
               "script": {
                 "exec": [
                   "var jsonData = pm.response.json();",
-                  "pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);"
-                ]
+                  "if (jsonData.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -212,8 +270,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
             }
           }
         },
@@ -225,12 +288,16 @@
               "script": {
                 "exec": [
                   "var jsonData = pm.response.json();",
-                  "pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);"
-                ]
+                  "if (jsonData.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
               }
             }
           ],
           "request": {
+            "description": "Refreshes the access token. Prefer running this after login with the Postman cookie jar enabled so the backend can read the refresh token cookie automatically. The request body is only a fallback.",
             "method": "POST",
             "header": [
               {
@@ -244,14 +311,20 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/refresh",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "refresh"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
             }
           }
         },
         {
           "name": "Logout",
           "request": {
+            "description": "Invalidates the current refresh token. This normally works through the refreshToken cookie set by login, so keep the Postman cookie jar enabled. The body token is optional fallback input.",
             "method": "POST",
             "header": [
               {
@@ -265,8 +338,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/logout",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "logout"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
             }
           }
         }
@@ -287,8 +365,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/users/profile",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "profile"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "profile"
+              ]
             }
           }
         }
@@ -298,38 +381,51 @@
       "name": "Equipment",
       "item": [
         {
-          "name": "Get Equipment by ID",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/equipment/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["equipment", "1"]
-            }
-          }
-        },
-        {
           "name": "Get All Equipment",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/equipment",
-              "host": ["{{baseUrl}}"],
-              "path": ["equipment"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment"
+              ]
             }
           }
         },
         {
-          "name": "Search Equipment by Name",
+          "name": "Get Equipment by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/equipment/{{equipmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipmentId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Equipment",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/equipment?search=laptop",
-              "host": ["{{baseUrl}}"],
-              "path": ["equipment"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment"
+              ],
               "query": [
                 {
                   "key": "search",
@@ -346,8 +442,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/equipment?type=Laptop",
-              "host": ["{{baseUrl}}"],
-              "path": ["equipment"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment"
+              ],
               "query": [
                 {
                   "key": "type",
@@ -358,14 +458,18 @@
           }
         },
         {
-          "name": "Filter by Status (Available)",
+          "name": "Filter Equipment by Status",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/equipment?status=available",
-              "host": ["{{baseUrl}}"],
-              "path": ["equipment"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment"
+              ],
               "query": [
                 {
                   "key": "status",
@@ -376,23 +480,19 @@
           }
         },
         {
-          "name": "Search & Filter Combined",
+          "name": "Filter Equipment by Condition",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/equipment?search=mac&status=available&condition=good",
-              "host": ["{{baseUrl}}"],
-              "path": ["equipment"],
+              "raw": "{{baseUrl}}/equipment?condition=good",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment"
+              ],
               "query": [
-                {
-                  "key": "search",
-                  "value": "mac"
-                },
-                {
-                  "key": "status",
-                  "value": "available"
-                },
                 {
                   "key": "condition",
                   "value": "good"
@@ -402,19 +502,32 @@
           }
         },
         {
-          "name": "Delete Equipment by ID",
+          "name": "Search and Filter Equipment",
           "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/equipment/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["equipment", ":id"]
+              "raw": "{{baseUrl}}/equipment?search=lab&status=available&condition=new",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "lab"
+                },
+                {
+                  "key": "status",
+                  "value": "available"
+                },
+                {
+                  "key": "condition",
+                  "value": "new"
+                }
+              ]
             }
           }
         },
@@ -434,12 +547,16 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"MacBook Pro\",\n  \"type\": \"Laptop\",\n  \"serial_number\": \"MBP123456\",\n  \"condition\": \"good\",\n  \"status\": \"available\",\n  \"location\": \"Room 101\",\n  \"photo_url\": \"https://example.com/photo.jpg\",\n  \"quantity\": 5\n}"
+              "raw": "{\n  \"name\": \"Dell Latitude 5420\",\n  \"type\": \"Laptop\",\n  \"serial_number\": \"DELL123456\",\n  \"condition\": \"new\",\n  \"status\": \"available\",\n  \"location\": \"Room 201\",\n  \"photo_url\": \"https://example.com/equipment/dell-latitude.jpg\",\n  \"quantity\": 5\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/equipment",
-              "host": ["{{baseUrl}}"],
-              "path": ["equipment"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment"
+              ]
             }
           }
         },
@@ -451,16 +568,48 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"checked_out\"\n}"
+              "raw": "{\n  \"status\": \"retired\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/equipment/1/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["equipment", "1", "status"]
+              "raw": "{{baseUrl}}/equipment/{{equipmentId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipmentId}}",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Equipment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipment/{{equipmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipmentId}}"
+              ]
             }
           }
         }
@@ -481,8 +630,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/admin/dashboard",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "dashboard"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard"
+              ]
             }
           }
         },
@@ -502,17 +656,22 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"admin_user\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"admin\"\n}"
+              "raw": "{\n  \"username\": \"new_teacher\",\n  \"email\": \"new_teacher@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"teacher\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/admin/users",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "users"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
             }
           }
         },
         {
-          "name": "Delete User by ID",
+          "name": "Delete User",
           "request": {
             "method": "DELETE",
             "header": [
@@ -522,9 +681,15 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/admin/users/5",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "users", "5"]
+              "raw": "{{baseUrl}}/admin/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{userId}}"
+              ]
             }
           }
         },
@@ -547,9 +712,16 @@
               "raw": "{\n  \"role\": \"teacher\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/admin/users/2/role",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "users", "2", "role"]
+              "raw": "{{baseUrl}}/admin/users/{{userId}}/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{userId}}",
+                "role"
+              ]
             }
           }
         }
@@ -558,6 +730,57 @@
     {
       "name": "Requests",
       "item": [
+        {
+          "name": "Submit Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipment_id\": {{equipmentId}},\n  \"quantity\": 2,\n  \"request_date\": \"2026-03-20T09:00:00.000Z\",\n  \"due_date\": \"2026-03-25T09:00:00.000Z\",\n  \"notes\": \"Need this equipment for a classroom demo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "request"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/request/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "request",
+                "my"
+              ]
+            }
+          }
+        },
         {
           "name": "Approve Request",
           "request": {
@@ -569,9 +792,15 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/request/:id/approve",
-              "host": ["{{baseUrl}}"],
-              "path": ["request", ":id", "approve"]
+              "raw": "{{baseUrl}}/request/{{requestId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "request",
+                "{{requestId}}",
+                "approve"
+              ]
             }
           }
         },
@@ -591,12 +820,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reason\": \"Equipment is under maintenance\"\n}"
+              "raw": "{\n  \"reason\": \"Equipment is reserved for another class\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/request/:id/reject",
-              "host": ["{{baseUrl}}"],
-              "path": ["request", ":id", "reject"]
+              "raw": "{{baseUrl}}/request/{{requestId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "request",
+                "{{requestId}}",
+                "reject"
+              ]
             }
           }
         },
@@ -616,54 +851,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"condition\": \"good\",\n  \"notes\": \"Returned in good condition\"\n}"
+              "raw": "{\n  \"condition\": \"good\",\n  \"notes\": \"Returned after class use\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/request/:id/return",
-              "host": ["{{baseUrl}}"],
-              "path": ["request", ":id", "return"]
-            }
-          }
-        },
-        {
-          "name": "Submit Request",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"equipment_id\": 1,\n  \"request_date\": \"2026-03-16\",\n  \"due_date\": \"2026-03-20\",\n  \"notes\": \"Need for class project\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/request",
-              "host": ["{{baseUrl}}"],
-              "path": ["request"]
-            }
-          }
-        },
-        {
-          "name": "Get My Requests",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/request/my",
-              "host": ["{{baseUrl}}"],
-              "path": ["request", "my"]
+              "raw": "{{baseUrl}}/request/{{requestId}}/return",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "request",
+                "{{requestId}}",
+                "return"
+              ]
             }
           }
         }

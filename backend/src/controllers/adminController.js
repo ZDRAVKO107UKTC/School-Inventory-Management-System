@@ -20,12 +20,21 @@ const createUser = async (req, res) => {
             });
         }
 
+        if (password.length < 8) {
+            return res.status(400).json({
+                message: "Password must be at least 8 characters long"
+            });
+        }
+
+        const normalizedUsername = username.trim();
+        const normalizedEmail = email.trim().toLowerCase();
+
         // Check if user already exists
         const existingUser = await User.findOne({
             where: {
                 [require('sequelize').Op.or]: [
-                    { email },
-                    { username }
+                    { email: normalizedEmail },
+                    { username: normalizedUsername }
                 ]
             }
         });
@@ -41,14 +50,14 @@ const createUser = async (req, res) => {
 
         // Create user
         const newUser = await User.create({
-            username,
-            email,
-            password: hashedPassword,
+            username: normalizedUsername,
+            email: normalizedEmail,
+            password_hash: hashedPassword,
             role
         });
 
-        // Return user without password
-        const { password: _, ...userWithoutPassword } = newUser.toJSON();
+        // Return user without password hash
+        const { password_hash: _, ...userWithoutPassword } = newUser.toJSON();
 
         return res.status(201).json({
             message: "User created successfully",

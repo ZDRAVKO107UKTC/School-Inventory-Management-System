@@ -2,7 +2,7 @@ const requestService = require('../services/requestService');
 
 const submitRequest = async (req, res) => {
     try {
-        const { equipment_id, request_date, due_date, notes } = req.body;
+        const { equipment_id, request_date, due_date, notes, quantity = 1 } = req.body;
         const user_id = req.user.userId; // From authMiddleware (authenticated user)
 
         // Acceptance Criteria: Date Validation
@@ -19,9 +19,14 @@ const submitRequest = async (req, res) => {
             return res.status(400).json({ message: "Due date must be after the borrow date" });
         }
 
+        if (!Number.isInteger(quantity) || quantity < 1) {
+            return res.status(400).json({ message: "Quantity must be a positive integer" });
+        }
+
         const newRequest = await requestService.createBorrowRequest({
             user_id,
             equipment_id,
+            quantity,
             request_date,
             due_date,
             notes
@@ -61,7 +66,11 @@ const approveRequest = async (req, res) => {
         if (error.message === 'Request not found') {
             return res.status(404).json({ message: error.message });
         }
-        if (error.message === 'Only pending requests can be approved' || error.message === 'Equipment is no longer available') {
+        if (
+            error.message === 'Only pending requests can be approved' ||
+            error.message === 'Equipment is no longer available' ||
+            error.message === 'Requested quantity exceeds available inventory'
+        ) {
             return res.status(400).json({ message: error.message });
         }
         console.error('Error approving request:', error);
