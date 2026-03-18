@@ -1,4 +1,4 @@
-const { Request, Equipment, ReturnConditionLog, User } = require('../../models');
+const {Request, Equipment, User} = require('../../models');
 
 const createBorrowRequest = async (requestData) => {
     const equipment = await Equipment.findByPk(requestData.equipment_id);
@@ -39,15 +39,15 @@ const createBorrowRequest = async (requestData) => {
 
 const getMyRequests = async (userId) => {
     return await Request.findAll({
-        where: { user_id: userId },
-        include: [{ model: Equipment, as: 'equipment' }], // Matches the alias in your model
+        where: {user_id: userId},
+        include: [{model: Equipment, as: 'equipment'}], // Matches the alias in your model
         order: [['created_at', 'DESC']]
     });
 };
 
 const approveRequest = async (requestId, approverId) => {
     const request = await Request.findByPk(requestId, {
-        include: [{ model: Equipment, as: 'equipment' }]
+        include: [{model: Equipment, as: 'equipment'}]
     });
 
     if (!request) {
@@ -103,7 +103,7 @@ const rejectRequest = async (requestId, rejectorId, reason) => {
 
 const returnRequest = async (requestId, userId, condition, notes) => {
     const request = await Request.findByPk(requestId, {
-        include: [{ model: Equipment, as: 'equipment' }]
+        include: [{model: Equipment, as: 'equipment'}]
     });
 
     if (!request) {
@@ -148,32 +148,37 @@ const returnRequest = async (requestId, userId, condition, notes) => {
     return request;
 };
 
-const getRequestConditionHistory = async (requestId) => {
-    const request = await Request.findByPk(requestId, {
+const getEquipmentHistory = async (equipmentId) => {
+    return await Request.findAll({
+        where: { equipment_id: equipmentId },
         include: [
             {
-                model: ReturnConditionLog,
-                as: 'conditionLogs',
-                attributes: ['id', 'condition', 'notes', 'recorded_at', 'created_at']
-            },
-            {
-                model: Equipment,
-                as: 'equipment',
-                attributes: ['id', 'name', 'type', 'serial_number']
+                model: User,
+                as: 'user', // Must match Request.js alias
+                attributes: ['id', 'username', 'email']
             },
             {
                 model: User,
-                as: 'user',
-                attributes: ['id', 'username', 'email']
+                as: 'approver', // Must match Request.js alias
+                attributes: ['id', 'username']
             }
-        ]
+        ],
+        order: [['created_at', 'DESC']]
     });
+};
 
-    if (!request) {
-        throw new Error('Request not found');
-    }
-
-    return request.conditionLogs.sort((a, b) => new Date(b.recorded_at) - new Date(a.recorded_at));
+const getUserHistory = async (userId) => {
+    return await Request.findAll({
+        where: {user_id: userId},
+        include: [
+            {
+                model: Equipment,
+                as: 'equipment',
+                attributes: ['name', 'type', 'serial_number']
+            }
+        ],
+        order: [['created_at', 'DESC']]
+    });
 };
 
 module.exports = {
@@ -182,5 +187,6 @@ module.exports = {
     approveRequest,
     rejectRequest,
     returnRequest,
-    getRequestConditionHistory
+    getEquipmentHistory,
+    getUserHistory,
 };
