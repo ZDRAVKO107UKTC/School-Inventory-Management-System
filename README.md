@@ -14,6 +14,7 @@ The backend currently provides:
 - Equipment management
 - Borrow request creation, approval, rejection, and return flows
 - Inventory-aware request quantities
+- Historical return-condition logging with admin query endpoints by request and equipment item
 
 ## Actual Backend API
 
@@ -39,6 +40,7 @@ The backend currently provides:
 
 - `GET /equipment`
 - `GET /equipment/:id`
+- `GET /equipment/:id/condition-history`
 - `POST /equipment`
 - `PUT /equipment/:id/status`
 - `DELETE /equipment/:id`
@@ -47,6 +49,7 @@ The backend currently provides:
 
 - `POST /request`
 - `GET /request/my`
+- `GET /request/:id/condition-history`
 - `PUT /request/:id/approve`
 - `PUT /request/:id/reject`
 - `PUT /request/:id/return`
@@ -58,6 +61,7 @@ The backend currently provides:
 - Requests now store requested `quantity`
 - Approving a request decreases available equipment quantity
 - Returning a request restores equipment quantity
+- Return-condition history is stored in `return_condition_logs` and can be queried by request or equipment item
 
 ## Backend Setup
 

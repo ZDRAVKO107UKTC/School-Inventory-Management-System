@@ -132,3 +132,25 @@ Body:
   "notes": "Returned after class project"
 }
 ```
+
+`condition` is required and is also written to the historical condition log.
+
+## Get Request Condition History
+
+`GET /request/1/condition-history`
+
+Header:
+
+```text
+Authorization: Bearer <admin-access-token>
+```
+
+## Get Equipment Condition History
+
+`GET /equipment/1/condition-history`
+
+Header:
+
+```text
+Authorization: Bearer <admin-access-token>
+```

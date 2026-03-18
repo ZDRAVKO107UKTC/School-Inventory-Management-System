@@ -95,6 +95,11 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'approved_by',
       as: 'approver'
     });
+
+    Request.hasMany(models.ReturnConditionLog, {
+      foreignKey: 'request_id',
+      as: 'conditionLogs'
+    });
   };
 
   return Request;

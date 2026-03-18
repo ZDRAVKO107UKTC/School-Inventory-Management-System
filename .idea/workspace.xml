@@ -68,48 +68,48 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;Docker.backend: Compose Deployment.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.All in test_equipment.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.test_equipment | Test Get Existing Equipment.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Node.js.app.js.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.authService.js.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.db.js.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.protectedRoutes.js.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.server.js.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.userRoutes.js.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;BE-FIX-01&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Program Files\\JetBrains\\WebStorm 2025.3.2\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "Docker.backend: Compose Deployment.executor": "Run",
+    "HTTP Request.All in test_equipment.executor": "Run",
+    "HTTP Request.test_equipment | Test Get Existing Equipment.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Node.js.app.js.executor": "Run",
+    "Node.js.authService.js.executor": "Run",
+    "Node.js.db.js.executor": "Run",
+    "Node.js.protectedRoutes.js.executor": "Run",
+    "Node.js.server.js.executor": "Run",
+    "Node.js.userRoutes.js.executor": "Run",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "BE-20",
+    "ignore.virus.scanning.warn.message": "true",
+    "javascript.preferred.runtime.type.id": "node",
+    "junie.onboarding.icon.badge.shown": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "C:\\Program Files\\JetBrains\\WebStorm 2025.3.2\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;postgresql&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "postgresql"
     ],
-    &quot;com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File&quot;: [
-      &quot;DotEnv&quot;
+    "com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File": [
+      "DotEnv"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\zdrav\Documents\GitHub\School-Inventory-Management-System" />
@@ -143,9 +143,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Node.js.server.js" />
+        <item itemvalue="Node.js.requestController.js" />
         <item itemvalue="HTTP Request.All in test" />
         <item itemvalue="Docker.backend: Compose Deployment" />
-        <item itemvalue="Node.js.requestController.js" />
+        <item itemvalue="Node.js.server.js" />
       </list>
     </recent_temporary>
   </component>
@@ -171,7 +172,7 @@
       <workItem from="1773694522894" duration="7271000" />
       <workItem from="1773848911931" duration="730000" />
       <workItem from="1773850003050" duration="1117000" />
-      <workItem from="1773853492313" duration="1295000" />
+      <workItem from="1773853492313" duration="4730000" />
     </task>
     <task id="LOCAL-00001" summary="working auth">
       <option name="closed" value="true" />

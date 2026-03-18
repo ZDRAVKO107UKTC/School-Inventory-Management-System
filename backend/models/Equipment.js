@@ -68,6 +68,11 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'equipment_id',
       as: 'requests'
     });
+
+    Equipment.hasMany(models.ReturnConditionLog, {
+      foreignKey: 'equipment_id',
+      as: 'conditionLogs'
+    });
   };
 
   return Equipment;
