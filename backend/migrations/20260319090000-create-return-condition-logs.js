@@ -73,13 +73,14 @@ module.exports = {
       SELECT
         id,
         equipment_id,
-        return_condition,
+        LOWER(TRIM(return_condition))::"public"."enum_return_condition_logs_condition",
         return_notes,
         COALESCE(return_date, updated_at, created_at, NOW()),
         NOW(),
         NOW()
       FROM requests
       WHERE return_condition IS NOT NULL
+        AND LOWER(TRIM(return_condition)) IN ('new', 'good', 'fair', 'damaged')
         AND NOT EXISTS (
           SELECT 1
           FROM return_condition_logs logs
