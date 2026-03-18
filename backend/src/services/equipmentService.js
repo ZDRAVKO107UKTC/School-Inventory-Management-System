@@ -1,4 +1,4 @@
-const { Equipment, Request, User } = require('../../models');
+const { Equipment, Request, User, ReturnConditionLog } = require('../../models');
 const { Op } = require('sequelize');
 
 const getEquipmentById = async (id) => {
@@ -115,6 +115,30 @@ const createRequest = async (requestData) => {
     });
 };
 
+const getEquipmentConditionHistory = async (equipmentId) => {
+    const equipment = await Equipment.findByPk(equipmentId);
+    if (!equipment) {
+        throw new Error('Equipment not found');
+    }
+
+    return await ReturnConditionLog.findAll({
+        where: { equipment_id: equipmentId },
+        include: [
+            {
+                model: Request,
+                as: 'request',
+                attributes: ['id', 'user_id', 'quantity', 'request_date', 'due_date', 'return_date', 'status']
+            },
+            {
+                model: Equipment,
+                as: 'equipment',
+                attributes: ['id', 'name', 'type', 'serial_number']
+            }
+        ],
+        order: [['recorded_at', 'DESC'], ['created_at', 'DESC']]
+    });
+};
+
 module.exports = { 
     getEquipmentById, 
     getAllEquipment, 
@@ -124,5 +148,6 @@ module.exports = {
     deleteEquipment,
     getUserRequests,
     getAllRequestsAdmin,
-    createRequest
+    createRequest,
+    getEquipmentConditionHistory
 };

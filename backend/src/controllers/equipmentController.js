@@ -21,6 +21,19 @@ const getEquipment = async (req, res) => {
     }
 };
 
+const getConditionHistory = async (req, res) => {
+    try {
+        const {id} = req.params;
+        const logs = await equipmentService.getEquipmentConditionHistory(id);
+        return res.status(200).json(logs);
+    } catch (error) {
+        if (error.message === 'Equipment not found') {
+            return res.status(404).json({ message: error.message });
+        }
+        return res.status(500).json({message: "Internal Server Error"});
+    }
+};
+
 const updateStatus = async (req, res) => {
     try {
         const {id} = req.params;
@@ -121,6 +134,7 @@ const createEquipment = async (req, res) => {
 module.exports = {
     getEquipmentDetails,
     getEquipment,
+    getConditionHistory,
     updateStatus,
     deleteEquipment,
     createEquipment,

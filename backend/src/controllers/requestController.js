@@ -107,6 +107,13 @@ const returnRequest = async (req, res) => {
         const { id } = req.params;
         const { condition, notes } = req.body; // Return condition and notes
         const userId = req.user.userId;
+        const validConditions = ['new', 'good', 'fair', 'damaged'];
+
+        if (!condition || !validConditions.includes(condition)) {
+            return res.status(400).json({
+                message: `Valid return condition is required. Allowed values: ${validConditions.join(', ')}`
+            });
+        }
 
         const request = await requestService.returnRequest(id, userId, condition, notes);
 
@@ -126,4 +133,25 @@ const returnRequest = async (req, res) => {
     }
 };
 
-module.exports = { submitRequest, getUserRequests, approveRequest, rejectRequest, returnRequest };
+const getRequestConditionHistory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const logs = await requestService.getRequestConditionHistory(id);
+        return res.status(200).json(logs);
+    } catch (error) {
+        if (error.message === 'Request not found') {
+            return res.status(404).json({ message: error.message });
+        }
+        console.error('Error fetching request condition history:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+module.exports = {
+    submitRequest,
+    getUserRequests,
+    approveRequest,
+    rejectRequest,
+    returnRequest,
+    getRequestConditionHistory
+};

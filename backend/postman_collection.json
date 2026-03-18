@@ -414,6 +414,29 @@
           }
         },
         {
+          "name": "Get Equipment Condition History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipment/{{equipmentId}}/condition-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment",
+                "{{equipmentId}}",
+                "condition-history"
+              ]
+            }
+          }
+        },
+        {
           "name": "Search Equipment",
           "request": {
             "method": "GET",
@@ -777,6 +800,29 @@
               "path": [
                 "request",
                 "my"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Request Condition History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/request/{{requestId}}/condition-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "request",
+                "{{requestId}}",
+                "condition-history"
               ]
             }
           }
