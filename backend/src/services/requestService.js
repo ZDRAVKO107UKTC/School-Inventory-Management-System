@@ -1,4 +1,4 @@
-const {Request, Equipment, User} = require('../../models');
+const {Request, Equipment, ReturnConditionLog, User} = require('../../models');
 
 const createBorrowRequest = async (requestData) => {
     const equipment = await Equipment.findByPk(requestData.equipment_id);
@@ -167,6 +167,34 @@ const getEquipmentHistory = async (equipmentId) => {
     });
 };
 
+const getRequestConditionHistory = async (requestId) => {
+    const request = await Request.findByPk(requestId, {
+        include: [
+            {
+                model: ReturnConditionLog,
+                as: 'conditionLogs',
+                attributes: ['id', 'condition', 'notes', 'recorded_at', 'created_at']
+            },
+            {
+                model: Equipment,
+                as: 'equipment',
+                attributes: ['id', 'name', 'type', 'serial_number']
+            },
+            {
+                model: User,
+                as: 'user',
+                attributes: ['id', 'username', 'email']
+            }
+        ]
+    });
+
+    if (!request) {
+        throw new Error('Request not found');
+    }
+
+    return request.conditionLogs.sort((a, b) => new Date(b.recorded_at) - new Date(a.recorded_at));
+};
+
 const getUserHistory = async (userId) => {
     return await Request.findAll({
         where: {user_id: userId},
@@ -188,5 +216,6 @@ module.exports = {
     rejectRequest,
     returnRequest,
     getEquipmentHistory,
+    getRequestConditionHistory,
     getUserHistory,
 };

@@ -416,6 +416,7 @@
         {
           "name": "Get Equipment Condition History",
           "request": {
+            "description": "Admin only. Returns the recorded return-condition history for a specific equipment item, newest first.",
             "method": "GET",
             "header": [
               {
@@ -805,8 +806,59 @@
           }
         },
         {
+          "name": "Get Equipment Borrowing History",
+          "request": {
+            "description": "Admin or teacher only. Returns request history entries for a specific equipment item.",
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/request/history/equipment/{{equipmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "request",
+                "history",
+                "equipment",
+                "{{equipmentId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Borrowing History",
+          "request": {
+            "description": "Admin or teacher only. Returns request history entries for a specific user.",
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/request/history/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "request",
+                "history",
+                "users",
+                "{{userId}}"
+              ]
+            }
+          }
+        },
+        {
           "name": "Get Request Condition History",
           "request": {
+            "description": "Admin only. Returns the condition log entries associated with a specific request.",
             "method": "GET",
             "header": [
               {
@@ -884,6 +936,7 @@
         {
           "name": "Return Request",
           "request": {
+            "description": "Marks an approved request as returned. `condition` is required and must be one of: new, good, fair, damaged.",
             "method": "PUT",
             "header": [
               {

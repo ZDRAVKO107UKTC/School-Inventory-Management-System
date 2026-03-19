@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="98e050de-4084-4ab4-b303-e143b3da6b6e" name="Changes" comment="Document API request examples in `API_REQUESTS.md`.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/postman_collection.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/postman_collection.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/controllers/requestController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/controllers/requestController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/routes/requestRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/routes/requestRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/services/requestService.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/services/requestService.js" afterDir="false" />
@@ -21,7 +22,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="97" />
+    <option name="cachedIndexableFilesCount" value="103" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -91,7 +92,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "BE-021",
+    "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "javascript.preferred.runtime.type.id": "node",
     "junie.onboarding.icon.badge.shown": "true",
@@ -120,20 +121,7 @@
       <recent name="C:\Users\zdrav\WebstormProjects\School-Inventory-Management-System\backend" />
     </key>
   </component>
-  <component name="RunDashboard">
-    <option name="configurationStatuses">
-      <map>
-        <entry key="HttpClient.HttpRequestRunConfigurationType">
-          <value>
-            <map>
-              <entry key="All in test_log" value="STOPPED" />
-            </map>
-          </value>
-        </entry>
-      </map>
-    </option>
-  </component>
-  <component name="RunManager" selected="HTTP Request.All in test_log">
+  <component name="RunManager" selected="Node.js.server.js">
     <configuration name="All in test" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" path="$PROJECT_DIR$/test.http">
       <method v="2" />
     </configuration>
@@ -162,8 +150,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="HTTP Request.All in test_log" />
         <item itemvalue="Node.js.server.js" />
+        <item itemvalue="HTTP Request.All in test_log" />
         <item itemvalue="Docker.backend: Compose Deployment" />
         <item itemvalue="HTTP Request.All in test" />
         <item itemvalue="Node.js.requestController.js" />

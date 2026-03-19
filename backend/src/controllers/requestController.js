@@ -143,6 +143,20 @@ const getEquipmentHistory = async (req, res) => {
     }
 };
 
+const getRequestConditionHistory = async (req, res) => {
+    try {
+        const {id} = req.params;
+        const logs = await requestService.getRequestConditionHistory(id);
+        return res.status(200).json(logs);
+    } catch (error) {
+        if (error.message === 'Request not found') {
+            return res.status(404).json({message: error.message});
+        }
+        console.error('Error fetching request condition history:', error);
+        return res.status(500).json({message: 'Internal Server Error'});
+    }
+};
+
 const getUserHistory = async (req, res) => {
     try {
         const {id} = req.params;
@@ -160,5 +174,6 @@ module.exports = {
     rejectRequest,
     returnRequest,
     getEquipmentHistory,
+    getRequestConditionHistory,
     getUserHistory
 };
