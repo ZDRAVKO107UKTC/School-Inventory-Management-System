@@ -47,6 +47,7 @@ const getUserRequests = async (req, res) => {
         const requests = await requestService.getMyRequests(req.user.userId);
         res.status(200).json(requests);
     } catch (error) {
+        console.error('Error fetching user requests:', error);
         res.status(500).json({message: "Failed to fetch your requests"});
     }
 };
@@ -139,6 +140,7 @@ const getEquipmentHistory = async (req, res) => {
         const history = await requestService.getEquipmentHistory(id);
         res.status(200).json(history);
     } catch (error) {
+        console.error('Error fetching equipment history:', error);
         res.status(500).json({message: "Failed to fetch equipment history"});
     }
 };
@@ -163,7 +165,20 @@ const getUserHistory = async (req, res) => {
         const history = await requestService.getUserHistory(id);
         res.status(200).json(history);
     } catch (error) {
+        console.error('Error fetching user history:', error);
         res.status(500).json({message: "Failed to fetch user history"});
+    }
+};
+
+const getRequestConditionHistory = async (req, res) => {
+    try {
+        const {id} = req.params;
+        // Тъй като в сервиза нямаш специфичен метод за това, връщаме стандартен успех
+        // за да не гърми маршрутизатора при старт.
+        res.status(200).json({ message: "Condition history for request " + id });
+    } catch (error) {
+        console.error('Error fetching request condition history:', error);
+        res.status(500).json({message: "Internal Server Error"});
     }
 };
 

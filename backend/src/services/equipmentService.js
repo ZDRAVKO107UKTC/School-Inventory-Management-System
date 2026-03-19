@@ -31,14 +31,12 @@ const createEquipment = async (data) => {
 const updateEquipment = async (id, data) => {
     const equipment = await Equipment.findByPk(id);
     if (!equipment) return null;
-    
     return await equipment.update(data);
 };
 
 const updateEquipmentStatus = async (id, status) => {
     const equipment = await Equipment.findByPk(id);
     if (!equipment) return null;
-    
     return await equipment.update({ status });
 };
 
@@ -54,7 +52,7 @@ const deleteEquipment = async (id) => {
     return true;
 };
 
-// BE-015: Текущи заявки на потребителя
+// BE-015: Текущи заявки на потребителя (използва се в equipmentController)
 const getUserRequests = async (userId) => {
     try {
         return await Request.findAll({
@@ -71,7 +69,7 @@ const getUserRequests = async (userId) => {
     }
 };
 
-// BE-016: Всички заявки за админ панела
+// BE-016: Всички заявки за админ панела с филтри
 const getAllRequestsAdmin = async (filters) => {
     const { status, user_id, equipment_id, startDate, endDate } = filters;
     let whereClause = {};
@@ -104,7 +102,7 @@ const getAllRequestsAdmin = async (filters) => {
     });
 };
 
-// Метод за създаване на нова заявка
+// Помощен метод за създаване на заявка (ако се вика от equipmentController)
 const createRequest = async (requestData) => {
     return await Request.create({
         user_id: requestData.user_id,
