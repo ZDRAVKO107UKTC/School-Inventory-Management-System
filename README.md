@@ -1,99 +1,89 @@
-# School-Inventory-Management-System
+# School Inventory Management System
 
-School inventory management system with:
+This project is now structured as a **microservices backend** with a React frontend.
 
-- Express + Sequelize + PostgreSQL backend
-- Vite + React frontend UI shell
+## Architecture
 
-## Backend Status
+### Frontend
+- `frontend/` (Vite + React + TypeScript)
+- Uses `/api/*` endpoints (through Vite proxy in dev)
 
-The backend currently provides:
+### Backend Microservices
+- `backend/microservices/services/auth-service` -> `/api/auth`
+- `backend/microservices/services/user-service` -> `/api/users`
+- `backend/microservices/services/admin-service` -> `/api/admin`
+- `backend/microservices/services/equipment-service` -> `/api/equipment`
+- `backend/microservices/services/request-service` -> `/api/request`, `/api/requests`
+- `backend/microservices/services/report-service` -> `/api/reports`
+- `backend/microservices/services/spatial-service` -> `/api/spatial`
 
-- JWT authentication with refresh tokens
-- Role-based access for `student`, `teacher`, and `admin`
-- Equipment management
-- Borrow request creation, approval, rejection, and return flows
-- Inventory-aware request quantities
-- Historical return-condition logging with admin query endpoints by request and equipment item
+### API Gateway
+- `backend/microservices/gateway`
+- Runs on `http://127.0.0.1:5000`
+- Routes incoming `/api/*` traffic to the correct service
 
-## Actual Backend API
+### Database
+- Shared PostgreSQL database (existing Sequelize models)
+- Local default in `.env`: `127.0.0.1:5433`
 
-All currently mounted backend routes are served under the `/api` prefix.
+## Run Locally (Microservices Mode)
 
-### Authentication
+1. Start PostgreSQL (recommended via Docker):
+```bash
+cd backend
+docker compose up -d postgres
+```
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-
-### Admin
-
-- `GET /api/admin/dashboard`
-- `POST /api/admin/users`
-- `DELETE /api/admin/users/:id`
-- `PUT /api/admin/users/:id/role`
-
-### Equipment
-
-- `GET /api/equipment`
-- `GET /api/equipment/:id`
-- `GET /api/equipment/:id/condition-history`
-- `POST /api/equipment`
-- `PUT /api/equipment/:id/status`
-- `DELETE /api/equipment/:id`
-
-### Requests
-
-- `POST /api/requests`
-- `GET /api/requests/my`
-- `GET /api/requests/history/equipment/:id`
-- `GET /api/requests/history/users/:id`
-- `GET /api/requests/:id/condition-history`
-- `PUT /api/requests/:id/approve`
-- `PUT /api/requests/:id/reject`
-- `PUT /api/requests/:id/return`
-
-### Reports
-
-- `GET /api/reports/usage`
-- `GET /api/reports/history`
-- `GET /api/reports/export`
-
-### Notes
-
-- `GET /api/requests/:id/condition-history/` is also accepted with a trailing slash.
-- `GET /api/equipment/:id/condition-history/` is also accepted with a trailing slash.
-- `src/routes/userRoutes.js` exists, but `/api/users/profile` is not currently mounted in `src/app.js`.
-
-## Data Model Notes
-
-- Primary keys are integer auto-increment IDs
-- Equipment tracks available `quantity`
-- Requests now store requested `quantity`
-- Approving a request decreases available equipment quantity
-- Returning a request restores equipment quantity
-- Returning a request also writes a record to `return_condition_logs`
-- Return-condition history can be queried by request or equipment item
-- Returning a damaged item moves the equipment status to `under_repair`
-
-## Backend Setup
-
+2. Install backend deps:
 ```bash
 cd backend
 npm install
-npx sequelize-cli db:create
-npx sequelize-cli db:migrate
-node seed.js
-npm start
 ```
 
-The backend runs on `http://localhost:5000` by default.
+3. Start all services + gateway:
+```bash
+cd backend
+npm run microservices:start
+```
 
-## Seed Data
+4. Start frontend:
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-The current seed script inserts sample equipment only. It does not create sample users.
+Frontend will call `http://127.0.0.1:5000/api/*` through proxy.
 
-## Frontend Note
+## Docker Microservices (All-in-one)
 
-The frontend in `frontend/` is still a design-phase UI and is not yet wired to the backend.
+Use:
+```bash
+cd backend
+docker compose -f docker-compose.microservices.yml up -d
+```
+
+This starts:
+- PostgreSQL
+- all backend services
+- API gateway
+
+## Environment Variables
+
+`backend/.env` now includes service ports:
+- `API_GATEWAY_PORT=5000`
+- `AUTH_SERVICE_PORT=5001`
+- `USER_SERVICE_PORT=5002`
+- `ADMIN_SERVICE_PORT=5003`
+- `EQUIPMENT_SERVICE_PORT=5004`
+- `REQUEST_SERVICE_PORT=5005`
+- `REPORT_SERVICE_PORT=5006`
+- `SPATIAL_SERVICE_PORT=5007`
+
+You can also override service URLs in gateway with:
+- `AUTH_SERVICE_URL`, `USER_SERVICE_URL`, `ADMIN_SERVICE_URL`, `EQUIPMENT_SERVICE_URL`, `REQUEST_SERVICE_URL`, `REPORT_SERVICE_URL`, `SPATIAL_SERVICE_URL`
+
+## Runtime Mode
+
+- Backend is **microservices-only**.
+- Monolith entrypoint `backend/server.js` has been removed.

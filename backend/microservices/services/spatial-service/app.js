@@ -1,0 +1,12 @@
+const { createServiceApp } = require('../../common/createServiceApp');
+const spatialRoutes = require('../../../src/routes/spatialRoutes');
+
+const app = createServiceApp({
+    serviceName: 'spatial-service',
+    mountRoutes: (expressApp) => {
+        expressApp.use('/api/spatial', spatialRoutes);
+    }
+});
+
+module.exports = app;
+

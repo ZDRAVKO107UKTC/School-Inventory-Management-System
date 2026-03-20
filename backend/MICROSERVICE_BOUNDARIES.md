@@ -1,148 +1,100 @@
 # BE-030 Microservice Boundaries
 
-This backend still runs as a single deployable Node.js app, but it now has explicit service boundaries so the system can be split into microservices later without redesigning responsibilities from scratch.
+The backend is now deployed as **real microservices** plus an API gateway.
 
-## Target Services
+## Running Services
 
-### 1. Auth Service
+- `auth-service` (`/api/auth`)
+- `user-service` (`/api/users`)
+- `admin-service` (`/api/admin`)
+- `equipment-service` (`/api/equipment`)
+- `request-service` (`/api/request`, `/api/requests`)
+- `report-service` (`/api/reports`)
+- `spatial-service` (`/api/spatial`)
+- `api-gateway` (entrypoint on port `5000`)
 
-Responsibilities:
-- Login, register, refresh, logout
-- JWT and refresh-token lifecycle
-- User profile lookup
-- Admin user management
+## Responsibilities
 
-Current route ownership:
-- `/auth`
-- `/api/auth`
-- `/admin`
-- `/api/admin`
-- `/users`
-- `/api/users`
+### Auth Service
+- register/login/refresh/logout
+- token lifecycle
+- auth middleware dependencies
 
-Primary data ownership:
+Data ownership:
 - `users`
 - `refresh_tokens`
 
-Published events later:
-- `user.created`
-- `user.role_changed`
-- `user.deleted`
+### User Service
+- authenticated profile retrieval
 
-### 2. Equipment Service
+Data ownership:
+- user identity projection
 
-Responsibilities:
-- Equipment catalog
-- Asset status and condition tracking
-- Equipment-to-room assignment
-- Floor and room topology
+### Admin Service
+- admin dashboard and user management flows
 
-Current route ownership:
-- `/equipment`
-- `/api/equipment`
-- `/spatial`
-- `/api/spatial`
+Data ownership:
+- admin-only operations on user domain
 
-Primary data ownership:
+### Equipment Service
+- equipment catalog CRUD
+- status/condition updates
+
+Data ownership:
 - `equipment`
-- `floors`
-- `rooms`
-- `return_condition_logs`
+- condition logs used for asset lifecycle
 
-Published events later:
-- `equipment.created`
-- `equipment.updated`
-- `equipment.status_changed`
-- `equipment.assigned_to_room`
+### Request Service
+- borrow/approve/reject/return workflows
+- request history endpoints
 
-### 3. Request Service
-
-Responsibilities:
-- Borrow request creation
-- Approval and rejection workflow
-- Return workflow
-- Request history by user/equipment/request
-
-Current route ownership:
-- `/request`
-- `/requests`
-- `/api/request`
-- `/api/requests`
-
-Primary data ownership:
+Data ownership:
 - `requests`
 
-Reads from:
-- Auth service identity data
-- Equipment service inventory data
-
-Published events later:
-- `request.created`
-- `request.approved`
-- `request.rejected`
-- `request.returned`
-
-### 4. Report / Notification Service
-
-Responsibilities:
-- Usage and history reports
+### Report Service
+- usage/history reports
 - CSV export
-- Notification fan-out in a future split
+- history reset endpoint
 
-Current route ownership:
-- `/reports`
-- `/api/reports`
+Data ownership:
+- reporting reads over request/equipment views
 
-Primary data ownership:
-- Read models / projections
-- Scheduled notification jobs
+### Spatial Service
+- floors/rooms CRUD
+- equipment placement assignment
 
-Consumes later:
-- `request.created`
-- `request.approved`
-- `request.returned`
-- `equipment.status_changed`
+Data ownership:
+- `floors`
+- `rooms`
+- equipment-room relationship
 
-## Current Monolith-to-Microservice Mapping
+## Gateway Contracts
 
-The code is now grouped through a boundary registry in `src/serviceBoundaries/`.
+Gateway forwards these public contracts unchanged:
+- `/api/auth/*`
+- `/api/users/*`
+- `/api/admin/*`
+- `/api/equipment/*`
+- `/api/request/*`
+- `/api/requests/*`
+- `/api/reports/*`
+- `/api/spatial/*`
 
-Files:
-- `src/serviceBoundaries/authBoundary.js`
-- `src/serviceBoundaries/equipmentBoundary.js`
-- `src/serviceBoundaries/requestBoundary.js`
-- `src/serviceBoundaries/reportNotificationBoundary.js`
-- `src/serviceBoundaries/index.js`
+Frontend should only call gateway (`http://127.0.0.1:5000` in local dev).
 
-`src/app.js` mounts routes through that registry, so service ownership is defined in one place.
+## Startup
 
-## Extraction Order
+### Local
+- `cd backend`
+- `npm run microservices:start`
 
-Recommended order:
-1. Auth service
-2. Equipment service
-3. Request service
-4. Report / notification service
+### Docker
+- `cd backend`
+- `docker compose -f docker-compose.microservices.yml up -d`
 
-Why:
-- Auth has the clearest data ownership.
-- Equipment is mostly CRUD plus topology.
-- Requests depend on both auth and equipment.
-- Reports are best extracted last once domain events are stable.
+## Monolith Status
 
-## Integration Rules
+- Monolith runtime has been removed.
+- `backend/server.js` no longer exists.
+- Backend start scripts point only to microservices orchestration.
 
-When these are split into real services:
-- Auth becomes the source of truth for users and roles.
-- Equipment becomes the source of truth for asset inventory and placement.
-- Request service must not mutate equipment tables directly; it should call Equipment or publish commands/events.
-- Report / notification should consume events and build its own projections instead of querying transactional tables directly.
-
-## Scoring Intent
-
-This structure gives you a defensible BE-030 answer because the boundaries are:
-- named
-- documented
-- mapped to current routes
-- mapped to current tables
-- staged for future extraction

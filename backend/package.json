@@ -2,11 +2,20 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "microservices/gateway/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "npm run microservices:start",
+    "dev": "npm run microservices:start",
+    "gateway:start": "node microservices/gateway/server.js",
+    "svc:auth": "node microservices/services/auth-service/server.js",
+    "svc:user": "node microservices/services/user-service/server.js",
+    "svc:admin": "node microservices/services/admin-service/server.js",
+    "svc:equipment": "node microservices/services/equipment-service/server.js",
+    "svc:request": "node microservices/services/request-service/server.js",
+    "svc:report": "node microservices/services/report-service/server.js",
+    "svc:spatial": "node microservices/services/spatial-service/server.js",
+    "microservices:start": "concurrently -k -n auth,user,admin,equipment,request,report,spatial,gateway -c yellow,cyan,magenta,green,blue,red,white,gray \"node microservices/services/auth-service/server.js\" \"node microservices/services/user-service/server.js\" \"node microservices/services/admin-service/server.js\" \"node microservices/services/equipment-service/server.js\" \"node microservices/services/request-service/server.js\" \"node microservices/services/report-service/server.js\" \"node microservices/services/spatial-service/server.js\" \"node microservices/gateway/server.js\""
   },
   "keywords": [],
   "author": "",
@@ -24,10 +33,11 @@
     "morgan": "^1.10.1",
     "pg": "^8.20.0",
     "pg-hstore": "^2.3.4",
-    "sequelize": "^6.37.8"
+    "sequelize": "^6.37.8",
+    "http-proxy-middleware": "^3.0.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14",
+    "concurrently": "^9.2.1",
     "sequelize-cli": "^6.6.5"
   }
 }
