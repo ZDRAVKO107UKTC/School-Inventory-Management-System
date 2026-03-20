@@ -40,13 +40,19 @@ cd backend
 npm install
 ```
 
-3. Start all services + gateway:
+3. Prepare database schema and demo data:
+```bash
+cd backend
+npm run db:setup
+```
+
+4. Start all services + gateway:
 ```bash
 cd backend
 npm run microservices:start
 ```
 
-4. Start frontend:
+5. Start frontend:
 ```bash
 cd frontend
 npm install
@@ -54,6 +60,15 @@ npm run dev
 ```
 
 Frontend will call `http://127.0.0.1:5000/api/*` through proxy.
+
+## Seeded Login Accounts
+
+All seeded users use password: `Password123`
+
+- Admin: `admin@school.local`
+- Teacher: `teacher@school.local`
+- Student: `student@school.local`
+- Student 2: `student2@school.local`
 
 ## Docker Microservices (All-in-one)
 
