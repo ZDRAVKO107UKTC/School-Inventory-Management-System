@@ -12,7 +12,7 @@ import { OAuthButtons } from './OAuthButtons';
 
 export interface SignupFormProps {
   onSwitchToLogin?: () => void;
-  onSubmit?: (fullName: string, email: string, password: string) => void;
+  onSubmit?: (username: string, email: string, password: string) => void;
   isLoading?: boolean;
   error?: string | null;
 }
@@ -23,15 +23,14 @@ export const SignupForm: React.FC<SignupFormProps> = ({
   isLoading = false,
   error,
 }) => {
-  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const [fieldErrors, setFieldErrors] = useState<{
-    fullName?: string;
+    username?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
@@ -39,20 +38,18 @@ export const SignupForm: React.FC<SignupFormProps> = ({
 
   const validateForm = () => {
     const nextErrors: {
-      fullName?: string;
+      username?: string;
       email?: string;
       password?: string;
       confirmPassword?: string;
     } = {};
 
-    if (!fullName.trim()) {
-      nextErrors.fullName = 'Enter your full name to create an account.';
+    if (!username.trim()) {
+      nextErrors.username = 'Choose a username to create your account.';
     }
 
     if (!email.trim()) {
       nextErrors.email = 'Enter your email address to create an account.';
-    } else if (!emailPattern.test(email.trim())) {
-      nextErrors.email = 'Enter a valid email address, like name@example.com.';
     }
 
     if (!password.trim()) {
@@ -70,7 +67,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({
     return Object.keys(nextErrors).length === 0;
   };
 
-  const clearFieldError = (field: 'fullName' | 'email' | 'password' | 'confirmPassword') => {
+  const clearFieldError = (field: 'username' | 'email' | 'password' | 'confirmPassword') => {
     setFieldErrors((current) => ({ ...current, [field]: undefined }));
   };
 
@@ -102,20 +99,20 @@ export const SignupForm: React.FC<SignupFormProps> = ({
           if (!validateForm()) {
             return;
           }
-          onSubmit?.(fullName, email, password);
+          onSubmit?.(username, email, password);
         }}
       >
         <Input
-          label="Full name"
+          label="Username"
           type="text"
-          placeholder="Gus Fring"
-          value={fullName}
+          placeholder="gus_fring"
+          value={username}
           onChange={(e) => {
-            setFullName(e.target.value);
-            clearFieldError('fullName');
+            setUsername(e.target.value);
+            clearFieldError('username');
           }}
           icon={<User className="w-5 h-5" strokeWidth={1.5} />}
-          error={fieldErrors.fullName}
+          error={fieldErrors.username}
           disabled={isLoading}
         />
 
@@ -130,7 +127,6 @@ export const SignupForm: React.FC<SignupFormProps> = ({
           }}
           icon={<Mail className="w-5 h-5" strokeWidth={1.5} />}
           error={fieldErrors.email}
-          errorVariant={fieldErrors.email?.includes('valid email') ? 'cloud' : 'inline'}
           disabled={isLoading}
         />
 

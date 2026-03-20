@@ -9,6 +9,7 @@ router.get('/:id/condition-history', authenticateToken, authorizeRoles('admin'),
 router.get('/:id/condition-history/', authenticateToken, authorizeRoles('admin'), equipmentController.getConditionHistory);
 router.get('/:id', equipmentController.getEquipmentDetails);
 router.put('/:id/status', authenticateToken, equipmentController.updateStatus);
+router.put('/:id', authenticateToken, authorizeRoles('admin'), equipmentController.updateEquipment);
 router.delete('/:id', authenticateToken, authorizeRoles('admin'), equipmentController.deleteEquipment);
 
 module.exports = router;

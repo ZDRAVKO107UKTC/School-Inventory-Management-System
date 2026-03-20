@@ -12,6 +12,7 @@ import { OAuthButtons } from './OAuthButtons';
 
 export interface LoginFormProps {
   onSwitchToSignup?: () => void;
+  onSwitchToAdmin?: () => void;
   onForgotPassword?: () => void;
   onSubmit?: (email: string, password: string) => void;
   isLoading?: boolean;
@@ -20,6 +21,7 @@ export interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({
   onSwitchToSignup,
+  onSwitchToAdmin,
   onForgotPassword,
   onSubmit,
   isLoading = false,
@@ -29,15 +31,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const validateForm = () => {
     const nextErrors: { email?: string; password?: string } = {};
 
     if (!email.trim()) {
       nextErrors.email = 'Enter your email address to continue.';
-    } else if (!emailPattern.test(email.trim())) {
-      nextErrors.email = 'Enter a valid email address, like name@example.com.';
     }
 
     if (!password.trim()) {
@@ -98,7 +97,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           onChange={(e) => handleEmailChange(e.target.value)}
           icon={<Mail className="w-5 h-5" strokeWidth={1.5} />}
           error={fieldErrors.email}
-          errorVariant={fieldErrors.email?.includes('valid email') ? 'cloud' : 'inline'}
           disabled={isLoading}
         />
 
@@ -169,6 +167,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           className="font-semibold text-lime-700 dark:text-purple-400 hover:underline"
         >
           Sign up
+        </button>
+      </p>
+
+      <p className="text-center text-xs text-slate-500 dark:text-slate-500">
+        Need admin tools?{' '}
+        <button
+          type="button"
+          onClick={onSwitchToAdmin}
+          className="font-semibold text-lime-700 dark:text-purple-400 hover:underline"
+        >
+          Admin panel login
         </button>
       </p>
     </div>

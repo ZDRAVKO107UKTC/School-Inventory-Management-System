@@ -7,7 +7,9 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const equipmentRoutes = require('./routes/equipmentRoutes');
 const requestRoutes = require('./routes/requestRoutes');
-const reportRoutes = require('./routes/reportRoutes'); // ТОВА ЛИПСВАШЕ
+const reportRoutes = require('./routes/reportRoutes');
+const userRoutes = require('./routes/userRoutes');
+const spatialRoutes = require('./routes/spatialRoutes');
 
 const app = express();
 
@@ -17,11 +19,13 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Дефиниране на API маршрутите
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/equipment', equipmentRoutes);
-app.use('/api/requests', requestRoutes);
-app.use('/api/reports', reportRoutes); // Ред 22 - вече работи
+app.use('/auth', authRoutes);
+app.use('/admin', adminRoutes);
+app.use('/equipment', equipmentRoutes);
+app.use('/request', requestRoutes);
+app.use('/reports', reportRoutes);
+app.use('/users', userRoutes);
+app.use('/spatial', spatialRoutes);
 
 // Базов маршрут за проверка
 app.get('/', (req, res) => {

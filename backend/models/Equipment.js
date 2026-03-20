@@ -53,6 +53,10 @@ module.exports = (sequelize, DataTypes) => {
       validate: {
         min: 0
       }
+    },
+    room_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true
     }
   }, {
     tableName: 'equipment',
@@ -72,6 +76,10 @@ module.exports = (sequelize, DataTypes) => {
     Equipment.hasMany(models.ReturnConditionLog, {
       foreignKey: 'equipment_id',
       as: 'conditionLogs'
+    });
+    Equipment.belongsTo(models.Room, {
+      foreignKey: 'room_id',
+      as: 'room'
     });
   };
 

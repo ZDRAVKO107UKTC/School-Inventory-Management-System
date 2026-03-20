@@ -95,21 +95,19 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({
   return (
     <div
       className={`
-        fixed inset-0 z-0 overflow-hidden transition-colors duration-300 ease-out
-        ${isDark
-          ? 'bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900'
-          : 'bg-gradient-to-br from-lime-50 via-lime-100 to-cyan-100'}
+        fixed inset-0 z-0 overflow-hidden transition-colors duration-500 ease-out
+        ${isDark ? 'bg-black' : 'bg-[#f5f5f7]'}
       `}
     >
       {/* ── Layer 1: Mesh pulse ── */}
       <div
         className={`
-          absolute inset-0 opacity-40 transition-colors duration-300 ease-out
+          absolute inset-0 opacity-20 transition-colors duration-500 ease-out
           ${isDark
-            ? 'bg-gradient-to-br from-purple-500/20 to-blue-500/20'
-            : 'bg-gradient-to-br from-lime-300/20 to-cyan-300/15'}
+            ? 'bg-gradient-to-br from-[#1d1d1f] to-black'
+            : 'bg-gradient-to-br from-white to-[#f5f5f7]'}
         `}
-        style={{ animation: `meshPulse ${isDark ? '10s' : '12s'} ease-in-out infinite` }}
+        style={{ animation: `meshPulse 15s ease-in-out infinite` }}
       />
 
       {/* ── Layer 2: Parallax floating blobs ── */}
@@ -118,27 +116,27 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({
         <div
           ref={blob1Ref}
           className={`
-            absolute top-10 left-20 w-80 h-80 rounded-full blur-3xl opacity-20
-            will-change-transform transition-colors duration-300 ease-out
-            ${isDark ? 'bg-purple-500' : 'bg-lime-300'}
+            absolute top-10 left-20 w-80 h-80 rounded-full blur-3xl opacity-10
+            will-change-transform transition-colors duration-500 ease-out
+            ${isDark ? 'bg-blue-600' : 'bg-blue-400'}
           `}
         />
         {/* Blob 2 – bottom-right */}
         <div
           ref={blob2Ref}
           className={`
-            absolute bottom-20 right-32 w-64 h-64 rounded-full blur-3xl opacity-25
-            will-change-transform transition-colors duration-300 ease-out
-            ${isDark ? 'bg-blue-500' : 'bg-emerald-300'}
+            absolute bottom-20 right-32 w-64 h-64 rounded-full blur-3xl opacity-10
+            will-change-transform transition-colors duration-500 ease-out
+            ${isDark ? 'bg-slate-700' : 'bg-slate-300'}
           `}
         />
         {/* Blob 3 – top-right */}
         <div
           ref={blob3Ref}
           className={`
-            absolute top-40 right-20 w-96 h-96 rounded-full blur-3xl opacity-15
-            will-change-transform transition-colors duration-300 ease-out
-            ${isDark ? 'bg-indigo-500' : 'bg-cyan-200'}
+            absolute top-40 right-20 w-96 h-96 rounded-full blur-3xl opacity-5
+            will-change-transform transition-colors duration-500 ease-out
+            ${isDark ? 'bg-blue-900' : 'bg-blue-100'}
           `}
         />
       </div>

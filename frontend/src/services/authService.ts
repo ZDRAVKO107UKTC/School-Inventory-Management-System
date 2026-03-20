@@ -1,177 +1,137 @@
-/**
- * Auth Service
- * API-ready contracts (no implementation yet)
- * Will be wired to Node.js/TypeScript backend
- */
-
 import type {
-  AuthResponse,
+  ApiResult,
+  AuthSession,
   LoginRequest,
   SignupRequest,
-  OAuthCallbackRequest,
-  PasswordResetRequest,
-  PasswordResetConfirm,
+  User,
 } from '@/types/auth';
+import { apiRequest } from '@/services/apiClient';
 
 export interface IAuthService {
-  /**
-   * Email/password login
-   * @param email User email
-   * @param password User password
-   * @returns Authentication response with token and user data
-   */
-  loginWithEmail(credentials: LoginRequest): Promise<AuthResponse>;
-
-  /**
-   * Email/password signup
-   * @param fullName User full name
-   * @param email User email
-   * @param password User password
-   * @returns Authentication response with token and user data
-   */
-  signupWithEmail(credentials: SignupRequest): Promise<AuthResponse>;
-
-  /**
-   * Initiate Google OAuth flow
-   * Redirects to Google consent screen
-   */
-  initiateGoogleOAuth(): void;
-
-  /**
-   * Initiate Apple OAuth flow
-   * Redirects to Apple Sign In screen
-   */
-  initiateAppleOAuth(): void;
-
-  /**
-   * Handle OAuth callback
-   * Extracts code from URL params and exchanges for token
-   */
-  handleOAuthCallback(params: OAuthCallbackRequest): Promise<AuthResponse>;
-
-  /**
-   * Request password reset email
-   */
-  requestPasswordReset(request: PasswordResetRequest): Promise<AuthResponse>;
-
-  /**
-   * Confirm password reset with token
-   */
-  resetPassword(request: PasswordResetConfirm): Promise<AuthResponse>;
-
-  /**
-   * Logout current session
-   */
-  logout(): Promise<AuthResponse>;
-
-  /**
-   * Refresh authentication token
-   */
-  refreshSession(): Promise<AuthResponse>;
-
-  /**
-   * Get current session user (or null if not authenticated)
-   */
-  getCurrentUser(): Promise<AuthResponse>;
+  loginWithEmail(credentials: LoginRequest): Promise<ApiResult<AuthSession>>;
+  signupWithEmail(credentials: SignupRequest): Promise<ApiResult<AuthSession>>;
+  logout(refreshToken?: string): Promise<ApiResult<null>>;
+  refreshSession(refreshToken?: string): Promise<ApiResult<AuthSession>>;
+  getCurrentUser(token: string): Promise<ApiResult<User>>;
 }
 
-/**
- * Auth Service Implementation
- * Constructor placeholder - will accept API client
- */
 export class AuthService implements IAuthService {
-  private apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+  async loginWithEmail(credentials: LoginRequest): Promise<ApiResult<AuthSession>> {
+    const result = await apiRequest<{
+      accessToken: string;
+      user: User;
+      message?: string;
+    }>('/auth/login', {
+      method: 'POST',
+      body: credentials,
+    });
 
-  constructor() {
-    // Placeholder: will receive API client in constructor
-  }
+    if (!result.success || !result.data) return { success: false, error: result.error };
 
-  async loginWithEmail(credentials: LoginRequest): Promise<AuthResponse> {
-    // Placeholder: no implementation yet
-    // Will POST to /auth/login
     return {
-      success: false,
-      error: 'Not implemented - awaiting backend API',
+      success: true,
+      data: {
+        accessToken: result.data.accessToken,
+        user: result.data.user,
+      },
+      message: result.data.message || 'Login successful',
     };
   }
 
-  async signupWithEmail(credentials: SignupRequest): Promise<AuthResponse> {
-    // Placeholder: no implementation yet
-    // Will POST to /auth/signup
+  async signupWithEmail(credentials: SignupRequest): Promise<ApiResult<AuthSession>> {
+    const registerResult = await apiRequest<{ user: User; message?: string }>('/auth/register', {
+      method: 'POST',
+      body: credentials,
+    });
+
+    if (!registerResult.success) {
+      return { success: false, error: registerResult.error };
+    }
+
+    const loginResult = await this.loginWithEmail({
+      email: credentials.email,
+      password: credentials.password,
+    });
+
+    if (!loginResult.success) {
+      return {
+        success: false,
+        error: loginResult.error || 'Registration succeeded but automatic login failed',
+      };
+    }
+
     return {
-      success: false,
-      error: 'Not implemented - awaiting backend API',
+      success: true,
+      data: loginResult.data,
+      message: registerResult.data?.message || 'User registered successfully',
     };
   }
 
-  initiateGoogleOAuth(): void {
-    // Placeholder: no implementation yet
-    // Will redirect to /auth/google/authorize endpoint
-    console.log('Google OAuth flow initiated (not implemented)');
-  }
+  async logout(refreshToken?: string): Promise<ApiResult<null>> {
+    const result = await apiRequest<{ message?: string }>('/auth/logout', {
+      method: 'POST',
+      body: refreshToken ? { refreshToken } : {},
+    });
 
-  initiateAppleOAuth(): void {
-    // Placeholder: no implementation yet
-    // Will redirect to /auth/apple/authorize endpoint
-    console.log('Apple OAuth flow initiated (not implemented)');
-  }
+    if (!result.success) return { success: false, error: result.error };
 
-  async handleOAuthCallback(params: OAuthCallbackRequest): Promise<AuthResponse> {
-    // Placeholder: no implementation yet
-    // Will POST to /auth/oauth/callback
     return {
-      success: false,
-      error: 'Not implemented - awaiting backend API',
+      success: true,
+      data: null,
+      message: result.data?.message || 'Logout successful',
     };
   }
 
-  async requestPasswordReset(request: PasswordResetRequest): Promise<AuthResponse> {
-    // Placeholder: no implementation yet
-    // Will POST to /auth/password-reset/request
+  async refreshSession(refreshToken?: string): Promise<ApiResult<AuthSession>> {
+    const result = await apiRequest<{
+      accessToken: string;
+      user: User;
+      message?: string;
+    }>('/auth/refresh', {
+      method: 'POST',
+      body: refreshToken ? { refreshToken } : {},
+    });
+
+    if (!result.success || !result.data) return { success: false, error: result.error };
+
     return {
-      success: false,
-      error: 'Not implemented - awaiting backend API',
+      success: true,
+      data: {
+        accessToken: result.data.accessToken,
+        user: result.data.user,
+      },
+      message: result.data.message || 'Session refreshed',
     };
   }
 
-  async resetPassword(request: PasswordResetConfirm): Promise<AuthResponse> {
-    // Placeholder: no implementation yet
-    // Will POST to /auth/password-reset/confirm
-    return {
-      success: false,
-      error: 'Not implemented - awaiting backend API',
-    };
-  }
+  async getCurrentUser(token: string): Promise<ApiResult<User>> {
+    const result = await apiRequest<{
+      user: {
+        id?: number;
+        userId?: number;
+        username?: string;
+        email: string;
+        role: User['role'];
+      };
+    }>('/users/profile', {
+      method: 'GET',
+      token,
+    });
 
-  async logout(): Promise<AuthResponse> {
-    // Placeholder: no implementation yet
-    // Will POST to /auth/logout
-    return {
-      success: false,
-      error: 'Not implemented - awaiting backend API',
-    };
-  }
+    if (!result.success || !result.data) return { success: false, error: result.error };
 
-  async refreshSession(): Promise<AuthResponse> {
-    // Placeholder: no implementation yet
-    // Will POST to /auth/refresh
     return {
-      success: false,
-      error: 'Not implemented - awaiting backend API',
-    };
-  }
-
-  async getCurrentUser(): Promise<AuthResponse> {
-    // Placeholder: no implementation yet
-    // Will GET /auth/me
-    return {
-      success: false,
-      error: 'Not implemented - awaiting backend API',
+      success: true,
+      data: {
+        id: result.data.user.id || result.data.user.userId || 0,
+        username: result.data.user.username || result.data.user.email.split('@')[0],
+        email: result.data.user.email,
+        role: result.data.user.role,
+      },
     };
   }
 }
 
-// Singleton instance (will be created in app providers)
 let authServiceInstance: AuthService | null = null;
 
 export const getAuthService = (): AuthService => {

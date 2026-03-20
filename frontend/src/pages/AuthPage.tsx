@@ -1,10 +1,5 @@
-/**
- * Auth Page (Login/Signup)
- * Main entry point for authentication UI
- * Combines interactive background, theme toggle, and form card
- */
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { InteractiveBackground } from '@/components/auth/InteractiveBackground';
 import { ThemeToggle } from '@/components/auth/ThemeToggle';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -21,20 +16,28 @@ export type AuthPageProps = {
 };
 
 export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  const { mode, setMode, isLoading, error, showForgotPassword, setShowForgotPassword } = useAuthStore();
-  const cardRef      = useRef<HTMLDivElement>(null);
-  const prevHeight   = useRef<number>(0);
+  const navigate = useNavigate();
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    localStorage.getItem('sims_theme') === 'light' ? 'light' : 'dark'
+  );
+  const {
+    mode,
+    setMode,
+    isLoading,
+    error,
+    showForgotPassword,
+    setShowForgotPassword,
+    login,
+    signup,
+    setError,
+  } = useAuthStore();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const prevHeight = useRef<number>(0);
   const cleanupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeView: ViewKey = showForgotPassword ? 'forgot' : (mode as ViewKey);
 
-  /**
-   * 1. Capture current pixel height and lock it on the card BEFORE React re-renders.
-   * 2. Immediately apply the state change — React will insert new content with the
-   *    card still clamped at the old height (overflow:hidden keeps it invisible).
-   * 3. useEffect (below) fires after paint and animates old → new height.
-   */
+
   const switchView = useCallback((apply: () => void) => {
     const el = cardRef.current;
     if (el) {
@@ -46,7 +49,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => 
     apply();
   }, []);
 
-  /** After React paints the new content, animate from the locked old height to the new natural height. */
+  useEffect(() => {
+    setMode(defaultMode);
+  }, [defaultMode, setMode]);
+
   useEffect(() => {
     const el = cardRef.current;
     if (!el || prevHeight.current === 0) return;
@@ -73,6 +79,29 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => 
       prevHeight.current = 0;
     }, HEIGHT_MS + 50);
   }, [activeView]);
+
+  const handleLogin = async (email: string, password: string) => {
+    const success = await login(email, password);
+    if (!success) return;
+
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser?.role === 'admin') {
+      navigate('/admin/dashboard');
+      return;
+    }
+
+    navigate('/dashboard');
+  };
+
+  const handleSignup = async (username: string, email: string, password: string) => {
+    const success = await signup(username, email, password);
+    if (success) navigate('/dashboard');
+  };
+
+  const handleForgotPassword = (email: string) => {
+    // Current backend has no password-reset endpoint yet.
+    setError(`Password reset endpoint is not available yet. Saved email: ${email}`);
+  };
 
   return (
     <div className={theme === 'dark' ? 'dark' : 'light'}>
@@ -111,19 +140,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => 
               {activeView === 'forgot' ? (
                 <ForgotPasswordForm
                   onBackToLogin={() => switchView(() => setShowForgotPassword(false))}
+                  onSubmit={handleForgotPassword}
                   isLoading={isLoading}
                   error={error}
                 />
               ) : activeView === 'login' ? (
                 <LoginForm
                   onSwitchToSignup={() => switchView(() => setMode('signup'))}
+                  onSwitchToAdmin={() => navigate('/admin/login')}
                   onForgotPassword={() => switchView(() => setShowForgotPassword(true))}
+                  onSubmit={handleLogin}
                   isLoading={isLoading}
                   error={error}
                 />
               ) : (
                 <SignupForm
                   onSwitchToLogin={() => switchView(() => setMode('login'))}
+                  onSubmit={handleSignup}
                   isLoading={isLoading}
                   error={error}
                 />

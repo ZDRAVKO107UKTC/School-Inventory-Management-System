@@ -20,12 +20,25 @@ const getAllEquipment = async (filters) => {
     if (type) whereClause.type = type;
     if (status) whereClause.status = status;
     if (condition) whereClause.condition = condition;
+    if (filters.room_id) whereClause.room_id = filters.room_id;
 
     return await Equipment.findAll({ where: whereClause });
 };
 
 const createEquipment = async (data) => {
-    return await Equipment.create(data);
+    const equipment = await Equipment.create(data);
+    
+    // Log initial condition
+    if (equipment.condition) {
+        await ReturnConditionLog.create({
+            equipment_id: equipment.id,
+            condition: equipment.condition,
+            notes: 'Initial registration',
+            recorded_at: new Date()
+        });
+    }
+    
+    return equipment;
 };
 
 const updateEquipment = async (id, data) => {
@@ -90,7 +103,12 @@ const getAllRequestsAdmin = async (filters) => {
             {
                 model: Equipment,
                 as: 'equipment',
-                attributes: ['id', 'name', 'serial_number']
+                attributes: ['id', 'name', 'serial_number'],
+                include: [{
+                    model: Room,
+                    as: 'room',
+                    attributes: ['id', 'name']
+                }]
             },
             {
                 model: User,
@@ -125,7 +143,8 @@ const getEquipmentConditionHistory = async (equipmentId) => {
             {
                 model: Request,
                 as: 'request',
-                attributes: ['id', 'user_id', 'quantity', 'request_date', 'due_date', 'return_date', 'status']
+                attributes: ['id', 'user_id', 'quantity', 'request_date', 'due_date', 'return_date', 'status'],
+                include: [{ model: User, as: 'user', attributes: ['username'] }]
             },
             {
                 model: Equipment,

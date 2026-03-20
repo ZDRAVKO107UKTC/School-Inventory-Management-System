@@ -1,9 +1,3 @@
-/**
- * Button Component
- * Primary, secondary, ghost, destructive variants
- * Design: SaaS-quality with smooth transitions
- */
-
 import React from 'react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -34,15 +28,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary:
-        'bg-gradient-to-r from-yellow-200 to-lime-200 text-lime-950 hover:shadow-lg hover:shadow-yellow-200/60 hover:scale-101 dark:from-purple-600 dark:to-blue-600 dark:text-white dark:hover:shadow-purple-500/30 active:scale-100',
+        'bg-[#1d1d1f] dark:bg-[#f5f5f7] text-white dark:text-[#1d1d1f] hover:bg-[#000000] dark:hover:bg-white shadow-sm active:scale-95',
       secondary:
-        'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50',
+        'bg-[#f5f5f7] dark:bg-[#1d1d1f] text-[#1d1d1f] dark:text-[#f5f5f7] border border-[#d2d2d7] dark:border-[#303030] hover:bg-[#e8e8ed] dark:hover:bg-[#2c2c2e]',
       ghost:
-        'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50',
+        'text-[#1d1d1f] dark:text-[#f5f5f7] hover:bg-[#f5f5f7] dark:hover:bg-[#1d1d1f]',
       destructive:
-        'bg-red-500 hover:bg-red-600 text-white hover:shadow-lg hover:scale-101 active:scale-100',
+        'bg-[#ff3b30] hover:bg-[#ff453a] text-white active:scale-95',
       oauth:
-        'border border-lime-200/90 bg-lime-50/35 hover:bg-lime-100/50 dark:border-slate-600 dark:bg-transparent dark:hover:bg-slate-700/30 text-slate-900 dark:text-white',
+        'border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] dark:border-[#303030] dark:bg-transparent dark:hover:bg-[#1d1d1f] text-[#1d1d1f] dark:text-[#f5f5f7]',
     };
 
     const sizes = {

@@ -18,6 +18,12 @@ router.get(
         });
     }
 );
+router.get(
+    "/users",
+    authenticateToken,
+    authorizeRoles("admin"),
+    adminController.listUsers
+);
 
 router.post(
     "/users",
@@ -38,6 +44,13 @@ router.put(
     authenticateToken,
     authorizeRoles("admin"),
     adminController.updateUserRole
+);
+
+router.put(
+    "/users/:id",
+    authenticateToken,
+    authorizeRoles("admin"),
+    adminController.updateUser
 );
 
 module.exports = router;

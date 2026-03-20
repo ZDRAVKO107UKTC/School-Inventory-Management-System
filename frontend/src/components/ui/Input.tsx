@@ -1,9 +1,3 @@
-/**
- * Input Component
- * Email, password, text inputs with validation states
- * Design: Clean borders with floating labels option
- */
-
 import React from 'react';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {

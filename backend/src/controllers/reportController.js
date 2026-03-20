@@ -8,7 +8,14 @@ const getUsageReport = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         const report = await requestService.getUsageReport({ startDate, endDate });
-        return res.status(200).json({ generated_at: new Date(), data: report });
+        
+        // Flatten for frontend
+        const flatData = report.map(item => ({
+            name: item.equipment?.name || `ID ${item.equipment_id}`,
+            borrowCount: parseInt(item.getDataValue('total_requests') || 0)
+        }));
+
+        return res.status(200).json({ generated_at: new Date(), data: flatData });
     } catch (error) {
         console.error('Usage Report Error:', error);
         return res.status(500).json({ message: "Internal Server Error" });
@@ -41,15 +48,17 @@ const getHistoryReport = async (req, res) => {
  */
 const exportReport = async (req, res) => {
     try {
-        // Вземаме данните от същия сървис, който ползваме за History
         const report = await requestService.getHistoryReport(req.query);
 
+        const fields = ['id', 'request_date', 'status', 'quantity', 'equipment_name', 'requested_by'];
         if (report.length === 0) {
-            return res.status(404).json({ message: "No data found for export" });
+            const json2csvParser = new Parser({ fields });
+            const csv = json2csvParser.parse([]); // Header only
+            res.header('Content-Type', 'text/csv');
+            res.attachment(`inventory_report_empty_${new Date().getTime()}.csv`);
+            return res.send(csv);
         }
 
-        // Мапваме ги за CSV формат
-        const fields = ['id', 'request_date', 'status', 'quantity', 'equipment_name', 'requested_by'];
         const data = report.map(item => ({
             id: item.id,
             request_date: item.request_date,
@@ -62,7 +71,6 @@ const exportReport = async (req, res) => {
         const json2csvParser = new Parser({ fields });
         const csv = json2csvParser.parse(data);
 
-        // Настройваме хедърите, за да знае браузърът, че това е файл за теглене
         res.header('Content-Type', 'text/csv');
         res.attachment(`inventory_report_${new Date().getTime()}.csv`);
         return res.send(csv);
@@ -73,8 +81,22 @@ const exportReport = async (req, res) => {
     }
 };
 
+/**
+ * Reset History
+ */
+const clearHistory = async (req, res) => {
+    try {
+        await requestService.clearHistoryData();
+        return res.status(200).json({ message: "History cleared successfully" });
+    } catch (error) {
+        console.error('Clear History Error:', error);
+        return res.status(500).json({ message: "Failed to clear history" });
+    }
+};
+
 module.exports = {
     getUsageReport,
     getHistoryReport,
-    exportReport
+    exportReport,
+    clearHistory
 };

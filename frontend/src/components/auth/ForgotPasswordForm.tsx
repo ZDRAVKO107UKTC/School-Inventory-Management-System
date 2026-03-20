@@ -26,15 +26,9 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
   const [emailError, setEmailError] = useState<string | undefined>(undefined);
   const [submitted, setSubmitted] = useState(false);
 
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
   const validateEmail = () => {
     if (!email.trim()) {
       setEmailError('Enter your email address to continue.');
-      return false;
-    }
-    if (!emailPattern.test(email.trim())) {
-      setEmailError('Enter a valid email address, like name@example.com.');
       return false;
     }
     setEmailError(undefined);
@@ -144,7 +138,6 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
                 onChange={(e) => handleEmailChange(e.target.value)}
                 icon={<Mail className="w-5 h-5" strokeWidth={1.5} />}
                 error={emailError}
-                errorVariant={emailError?.includes('valid email') ? 'cloud' : 'inline'}
                 disabled={isLoading}
               />
 
