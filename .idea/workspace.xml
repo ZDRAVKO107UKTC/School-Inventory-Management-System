@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98e050de-4084-4ab4-b303-e143b3da6b6e" name="Changes" comment="Refactor API route handling, improve service client configuration, and add admin login/dashboard routes.">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="98e050de-4084-4ab4-b303-e143b3da6b6e" name="Changes" comment="Refactor API route handling, improve service client configuration, and add admin login/dashboard routes." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -179,6 +177,7 @@
       <workItem from="1773853492313" duration="5870000" />
       <workItem from="1773916204350" duration="3290000" />
       <workItem from="1773936542282" duration="1401000" />
+      <workItem from="1774212880658" duration="398000" />
     </task>
     <task id="LOCAL-00001" summary="working auth">
       <option name="closed" value="true" />

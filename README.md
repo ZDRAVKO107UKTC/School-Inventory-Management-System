@@ -22,6 +22,10 @@ This project is now structured as a **microservices backend** with a React front
 - Runs on `http://127.0.0.1:5000`
 - Routes incoming `/api/*` traffic to the correct service
 
+### Architecture Notes
+- Service boundaries: [backend/MICROSERVICE_BOUNDARIES.md](C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System/backend/MICROSERVICE_BOUNDARIES.md)
+- Architecture decisions: [backend/ARCHITECTURE_DECISIONS.md](C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System/backend/ARCHITECTURE_DECISIONS.md)
+
 ### Database
 - Shared PostgreSQL database (existing Sequelize models)
 - Local default in `.env`: `127.0.0.1:5433`
