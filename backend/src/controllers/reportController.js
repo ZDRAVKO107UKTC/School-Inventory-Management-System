@@ -1,5 +1,6 @@
 const requestService = require('../services/requestService');
 const { Parser } = require('json2csv');
+const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
 
 /**
  * BE-022: Usage Report
@@ -7,13 +8,21 @@ const { Parser } = require('json2csv');
 const getUsageReport = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-        const report = await requestService.getUsageReport({ startDate, endDate });
+        const pagination = resolvePagination(req.query);
+        const reportResult = await requestService.getUsageReport({ startDate, endDate }, pagination);
+        const report = pagination ? reportResult.rows : reportResult;
         
         // Flatten for frontend
         const flatData = report.map(item => ({
             name: item.equipment?.name || `ID ${item.equipment_id}`,
             borrowCount: parseInt(item.getDataValue('total_requests') || 0)
         }));
+
+        if (pagination) {
+            const paginationMeta = buildPaginationMeta(reportResult.count, pagination);
+            applyPaginationHeaders(res, paginationMeta);
+            return res.status(200).json({ generated_at: new Date(), data: flatData, pagination: paginationMeta });
+        }
 
         return res.status(200).json({ generated_at: new Date(), data: flatData });
     } catch (error) {
@@ -27,7 +36,9 @@ const getUsageReport = async (req, res) => {
  */
 const getHistoryReport = async (req, res) => {
     try {
-        const report = await requestService.getHistoryReport(req.query);
+        const pagination = resolvePagination(req.query);
+        const reportResult = await requestService.getHistoryReport(req.query, pagination);
+        const report = pagination ? reportResult.rows : reportResult;
         const flatData = report.map(item => ({
             id: item.id,
             request_date: item.request_date,
@@ -36,6 +47,13 @@ const getHistoryReport = async (req, res) => {
             equipment: item.equipment?.name || 'N/A',
             user: item.user?.username || 'Unknown'
         }));
+
+        if (pagination) {
+            const paginationMeta = buildPaginationMeta(reportResult.count, pagination);
+            applyPaginationHeaders(res, paginationMeta);
+            return res.status(200).json({ generated_at: new Date(), data: flatData, pagination: paginationMeta });
+        }
+
         return res.status(200).json({ generated_at: new Date(), data: flatData });
     } catch (error) {
         console.error('History Report Error:', error);

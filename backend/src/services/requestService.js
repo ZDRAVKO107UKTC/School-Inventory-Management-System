@@ -6,7 +6,7 @@ const { Op, fn, col } = require('sequelize');
  */
 const createBorrowRequest = async (requestData) => {
     const equipment = await Equipment.findByPk(requestData.equipment_id);
-    
+
     if (!equipment) {
         const error = new Error('Equipment not found');
         error.statusCode = 404;
@@ -45,8 +45,8 @@ const createBorrowRequest = async (requestData) => {
 /**
  * Fetches requests for the logged-in user
  */
-const getMyRequests = async (userId) => {
-    return Request.findAll({
+const getMyRequests = async (userId, pagination = null) => {
+    const queryOptions = {
         where: { user_id: userId },
         attributes: [
             'id',
@@ -64,12 +64,23 @@ const getMyRequests = async (userId) => {
             'created_at',
             'updated_at'
         ],
-        include: [{ 
-            model: Equipment, 
+        include: [{
+            model: Equipment,
             as: 'equipment',
             attributes: ['id', 'name', 'type', 'serial_number', 'condition']
         }],
         order: [['created_at', 'DESC']]
+    };
+
+    if (!pagination) {
+        return Request.findAll(queryOptions);
+    }
+
+    return Request.findAndCountAll({
+        ...queryOptions,
+        distinct: true,
+        limit: pagination.limit,
+        offset: pagination.offset
     });
 };
 
@@ -132,7 +143,7 @@ const approveRequest = async (requestId, approverId) => {
 const rejectRequest = async (requestId, rejectorId, reason) => {
     const request = await Request.findByPk(requestId);
     if (!request) throw new Error('Request not found');
-    
+
     request.status = 'rejected';
     if (reason) request.notes = reason;
     await request.save();
@@ -214,7 +225,7 @@ const returnRequest = async (requestId, userId, condition, notes, actorRole) => 
 /**
  * BE-022: Usage Report
  */
-const getUsageReport = async (filters = {}) => {
+const getUsageReport = async (filters = {}, pagination = null) => {
     const { startDate, endDate } = filters;
     let whereClause = {};
 
@@ -224,7 +235,7 @@ const getUsageReport = async (filters = {}) => {
         if (endDate) whereClause.request_date[Op.lte] = new Date(endDate);
     }
 
-    return await Request.findAll({
+    const queryOptions = {
         where: whereClause,
         attributes: [
             'equipment_id',
@@ -238,13 +249,30 @@ const getUsageReport = async (filters = {}) => {
         }],
         group: ['Request.equipment_id', 'equipment.id', 'equipment.name', 'equipment.type', 'equipment.serial_number'],
         order: [[fn('COUNT', col('Request.id')), 'DESC']]
+    };
+
+    const rows = await Request.findAll({
+        ...queryOptions,
+        ...(pagination ? { limit: pagination.limit, offset: pagination.offset } : {})
     });
+
+    if (!pagination) {
+        return rows;
+    }
+
+    const count = await Request.count({
+        where: whereClause,
+        distinct: true,
+        col: 'equipment_id'
+    });
+
+    return { rows, count };
 };
 
 /**
- * BE-023: History Report (ФИКСИРАН ЗА QUANTITY)
+ * BE-023: History Report
  */
-const getHistoryReport = async (filters = {}) => {
+const getHistoryReport = async (filters = {}, pagination = null) => {
     const { startDate, endDate, status, equipment_id } = filters;
     let whereClause = {};
 
@@ -257,20 +285,19 @@ const getHistoryReport = async (filters = {}) => {
     if (status) whereClause.status = status;
     if (equipment_id) whereClause.equipment_id = equipment_id;
 
-    return await Request.findAll({
+    const queryOptions = {
         where: whereClause,
-        // Изрично изброяваме колоните, за да избегнем грешката "column Request.quantity does not exist"
         attributes: [
-            'id', 
-            'user_id', 
-            'equipment_id', 
-            'quantity', 
-            'request_date', 
-            'due_date', 
-            'return_date', 
-            'status', 
-            'notes', 
-            'approved_by', 
+            'id',
+            'user_id',
+            'equipment_id',
+            'quantity',
+            'request_date',
+            'due_date',
+            'return_date',
+            'status',
+            'notes',
+            'approved_by',
             'return_condition'
         ],
         include: [
@@ -291,13 +318,24 @@ const getHistoryReport = async (filters = {}) => {
             }
         ],
         order: [['request_date', 'DESC']]
+    };
+
+    if (!pagination) {
+        return await Request.findAll(queryOptions);
+    }
+
+    return await Request.findAndCountAll({
+        ...queryOptions,
+        distinct: true,
+        limit: pagination.limit,
+        offset: pagination.offset
     });
 };
 
 /**
  * Admin: Fetches all requests with filters
  */
-const getAllRequestsAdmin = async (filters = {}) => {
+const getAllRequestsAdmin = async (filters = {}, pagination = null) => {
     const { status, equipment_id, user_id } = filters;
     let whereClause = {};
 
@@ -305,7 +343,7 @@ const getAllRequestsAdmin = async (filters = {}) => {
     if (equipment_id) whereClause.equipment_id = equipment_id;
     if (user_id) whereClause.user_id = user_id;
 
-    return await Request.findAll({
+    const queryOptions = {
         where: whereClause,
         attributes: [
             'id',
@@ -324,18 +362,29 @@ const getAllRequestsAdmin = async (filters = {}) => {
             'updated_at'
         ],
         include: [
-            { 
-                model: Equipment, 
-                as: 'equipment', 
-                attributes: ['id', 'name', 'type', 'serial_number'] 
+            {
+                model: Equipment,
+                as: 'equipment',
+                attributes: ['id', 'name', 'type', 'serial_number']
             },
-            { 
-                model: User, 
-                as: 'user', 
-                attributes: ['id', 'username', 'email'] 
+            {
+                model: User,
+                as: 'user',
+                attributes: ['id', 'username', 'email']
             }
         ],
         order: [['created_at', 'DESC']]
+    };
+
+    if (!pagination) {
+        return await Request.findAll(queryOptions);
+    }
+
+    return await Request.findAndCountAll({
+        ...queryOptions,
+        distinct: true,
+        limit: pagination.limit,
+        offset: pagination.offset
     });
 };
 
@@ -350,7 +399,6 @@ const deleteRequest = async (requestId, actorId, actorRole) => {
     const isOwner = Number(request.user_id) === Number(actorId);
     const isDeletable = deletableStatuses.includes(request.status);
 
-    // Authorization: Admin/Teacher can delete any, user can delete their own only if pending/returned/rejected
     if (actorRole === 'student') {
         if (!isOwner || !isDeletable) {
             console.error(`[AUTH] Delete Forbidden: Role=${actorRole}, isOwner=${isOwner}, isDeletable=${isDeletable}, UserID=${actorId}, RequestOwner=${request.user_id}, Status=${request.status}`);
@@ -360,8 +408,9 @@ const deleteRequest = async (requestId, actorId, actorRole) => {
 
     return await request.destroy();
 };
-const getEquipmentHistory = async (equipmentId) => {
-    return await Request.findAll({
+
+const getEquipmentHistory = async (equipmentId, pagination = null) => {
+    const queryOptions = {
         where: { equipment_id: equipmentId },
         attributes: [
             'id',
@@ -384,11 +433,22 @@ const getEquipmentHistory = async (equipmentId) => {
             { model: User, as: 'approver', attributes: ['username'] }
         ],
         order: [['created_at', 'DESC']]
+    };
+
+    if (!pagination) {
+        return await Request.findAll(queryOptions);
+    }
+
+    return await Request.findAndCountAll({
+        ...queryOptions,
+        distinct: true,
+        limit: pagination.limit,
+        offset: pagination.offset
     });
 };
 
-const getUserHistory = async (userId) => {
-    return await Request.findAll({
+const getUserHistory = async (userId, pagination = null) => {
+    const queryOptions = {
         where: { user_id: userId },
         attributes: [
             'id',
@@ -411,16 +471,27 @@ const getUserHistory = async (userId) => {
             { model: User, as: 'approver', attributes: ['username'] }
         ],
         order: [['created_at', 'DESC']]
+    };
+
+    if (!pagination) {
+        return await Request.findAll(queryOptions);
+    }
+
+    return await Request.findAndCountAll({
+        ...queryOptions,
+        distinct: true,
+        limit: pagination.limit,
+        offset: pagination.offset
     });
 };
 
-const getRequestConditionHistory = async (requestId) => {
+const getRequestConditionHistory = async (requestId, pagination = null) => {
     const request = await Request.findByPk(requestId);
     if (!request) {
         throw new Error('Request not found');
     }
 
-    return await ReturnConditionLog.findAll({
+    const queryOptions = {
         where: { request_id: requestId },
         attributes: ['id', 'request_id', 'equipment_id', 'condition', 'notes', 'recorded_at', 'created_at'],
         include: [
@@ -435,19 +506,29 @@ const getRequestConditionHistory = async (requestId) => {
             }
         ],
         order: [['recorded_at', 'DESC'], ['created_at', 'DESC']]
+    };
+
+    if (!pagination) {
+        return await ReturnConditionLog.findAll(queryOptions);
+    }
+
+    return await ReturnConditionLog.findAndCountAll({
+        ...queryOptions,
+        distinct: true,
+        limit: pagination.limit,
+        offset: pagination.offset
     });
 };
 
 const clearHistoryData = async () => {
-    // Using raw SQL TRUNCATE with CASCADE is the most reliable way to clear these related tables in Postgres
     await sequelize.query('TRUNCATE return_condition_logs, requests RESTART IDENTITY CASCADE');
 };
 
 module.exports = {
     createBorrowRequest,
     getMyRequests,
-    getAllRequestsAdmin, // Added
-    deleteRequest,      // Added
+    getAllRequestsAdmin,
+    deleteRequest,
     approveRequest,
     rejectRequest,
     returnRequest,

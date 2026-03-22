@@ -1,4 +1,5 @@
 const equipmentService = require('../services/equipmentService');
+const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
 
 const getEquipmentDetails = async (req, res) => {
     try {
@@ -14,8 +15,16 @@ const getEquipmentDetails = async (req, res) => {
 const getEquipment = async (req, res) => {
     try {
         const filters = req.query;
-        const list = await equipmentService.getAllEquipment(filters);
-        res.status(200).json(list);
+        const pagination = resolvePagination(req.query);
+        const result = await equipmentService.getAllEquipment(filters, pagination);
+
+        if (!pagination) {
+            return res.status(200).json(result);
+        }
+
+        const paginationMeta = buildPaginationMeta(result.count, pagination);
+        applyPaginationHeaders(res, paginationMeta);
+        return res.status(200).json(result.rows);
     } catch (error) {
         res.status(500).json({error: "Failed to fetch equipment"});
     }
@@ -24,8 +33,16 @@ const getEquipment = async (req, res) => {
 const getConditionHistory = async (req, res) => {
     try {
         const {id} = req.params;
-        const logs = await equipmentService.getEquipmentConditionHistory(id);
-        return res.status(200).json(logs);
+        const pagination = resolvePagination(req.query);
+        const result = await equipmentService.getEquipmentConditionHistory(id, pagination);
+
+        if (!pagination) {
+            return res.status(200).json(result);
+        }
+
+        const paginationMeta = buildPaginationMeta(result.count, pagination);
+        applyPaginationHeaders(res, paginationMeta);
+        return res.status(200).json(result.rows);
     } catch (error) {
         if (error.message === 'Equipment not found') {
             return res.status(404).json({ message: error.message });

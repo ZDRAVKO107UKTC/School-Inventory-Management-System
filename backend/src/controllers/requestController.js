@@ -1,4 +1,5 @@
 const requestService = require('../services/requestService');
+const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
 
 const submitRequest = async (req, res) => {
     try {
@@ -43,8 +44,16 @@ const submitRequest = async (req, res) => {
 
 const getUserRequests = async (req, res) => {
     try {
-        const requests = await requestService.getMyRequests(req.user.userId);
-        return res.status(200).json(requests);
+        const pagination = resolvePagination(req.query);
+        const result = await requestService.getMyRequests(req.user.userId, pagination);
+
+        if (!pagination) {
+            return res.status(200).json(result);
+        }
+
+        const paginationMeta = buildPaginationMeta(result.count, pagination);
+        applyPaginationHeaders(res, paginationMeta);
+        return res.status(200).json(result.rows);
     } catch (error) {
         console.error('Error fetching user requests:', error);
         return res.status(500).json({message: "Failed to fetch your requests"});
@@ -53,8 +62,16 @@ const getUserRequests = async (req, res) => {
 
 const getAdminRequests = async (req, res) => {
     try {
-        const requests = await requestService.getAllRequestsAdmin(req.query || {});
-        return res.status(200).json({ requests });
+        const pagination = resolvePagination(req.query);
+        const result = await requestService.getAllRequestsAdmin(req.query || {}, pagination);
+
+        if (!pagination) {
+            return res.status(200).json({ requests: result });
+        }
+
+        const paginationMeta = buildPaginationMeta(result.count, pagination);
+        applyPaginationHeaders(res, paginationMeta);
+        return res.status(200).json({ requests: result.rows, pagination: paginationMeta });
     } catch (error) {
         console.error('Error fetching admin requests:', error);
         return res.status(500).json({ message: 'Internal Server Error' });
@@ -150,8 +167,16 @@ const returnRequest = async (req, res) => {
 const getEquipmentHistory = async (req, res) => {
     try {
         const {id} = req.params;
-        const history = await requestService.getEquipmentHistory(id);
-        return res.status(200).json(history);
+        const pagination = resolvePagination(req.query);
+        const result = await requestService.getEquipmentHistory(id, pagination);
+
+        if (!pagination) {
+            return res.status(200).json(result);
+        }
+
+        const paginationMeta = buildPaginationMeta(result.count, pagination);
+        applyPaginationHeaders(res, paginationMeta);
+        return res.status(200).json(result.rows);
     } catch (error) {
         console.error('Error fetching equipment history:', error);
         return res.status(500).json({message: "Failed to fetch equipment history"});
@@ -161,8 +186,16 @@ const getEquipmentHistory = async (req, res) => {
 const getUserHistory = async (req, res) => {
     try {
         const {id} = req.params;
-        const history = await requestService.getUserHistory(id);
-        return res.status(200).json(history);
+        const pagination = resolvePagination(req.query);
+        const result = await requestService.getUserHistory(id, pagination);
+
+        if (!pagination) {
+            return res.status(200).json(result);
+        }
+
+        const paginationMeta = buildPaginationMeta(result.count, pagination);
+        applyPaginationHeaders(res, paginationMeta);
+        return res.status(200).json(result.rows);
     } catch (error) {
         console.error('Error fetching user history:', error);
         return res.status(500).json({message: "Failed to fetch user history"});
@@ -172,8 +205,16 @@ const getUserHistory = async (req, res) => {
 const getRequestConditionHistory = async (req, res) => {
     try {
         const {id} = req.params;
-        const history = await requestService.getRequestConditionHistory(id);
-        return res.status(200).json(history);
+        const pagination = resolvePagination(req.query);
+        const result = await requestService.getRequestConditionHistory(id, pagination);
+
+        if (!pagination) {
+            return res.status(200).json(result);
+        }
+
+        const paginationMeta = buildPaginationMeta(result.count, pagination);
+        applyPaginationHeaders(res, paginationMeta);
+        return res.status(200).json(result.rows);
     } catch (error) {
         if (error.message === 'Request not found') {
             return res.status(404).json({message: error.message});

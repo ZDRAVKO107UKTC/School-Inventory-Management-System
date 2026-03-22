@@ -11,7 +11,7 @@ const getEquipmentById = async (id) => {
     });
 };
 
-const getAllEquipment = async (filters) => {
+const getAllEquipment = async (filters, pagination = null) => {
     const { search, type, status, condition } = filters;
     let whereClause = {};
 
@@ -28,7 +28,7 @@ const getAllEquipment = async (filters) => {
     if (condition) whereClause.condition = condition;
     if (filters.room_id) whereClause.room_id = filters.room_id;
 
-    return await Equipment.findAll({
+    const queryOptions = {
         where: whereClause,
         attributes: [
             'id',
@@ -45,6 +45,16 @@ const getAllEquipment = async (filters) => {
             'updated_at'
         ],
         order: [['updated_at', 'DESC'], ['id', 'DESC']]
+    };
+
+    if (!pagination) {
+        return await Equipment.findAll(queryOptions);
+    }
+
+    return await Equipment.findAndCountAll({
+        ...queryOptions,
+        limit: pagination.limit,
+        offset: pagination.offset
     });
 };
 
@@ -89,9 +99,9 @@ const deleteEquipment = async (id) => {
 };
 
 // BE-015: Текущи заявки на потребителя (използва се в equipmentController)
-const getUserRequests = async (userId) => {
+const getUserRequests = async (userId, pagination = null) => {
     try {
-        return await Request.findAll({
+        const queryOptions = {
             where: { user_id: userId },
             attributes: [
                 'id',
@@ -115,6 +125,17 @@ const getUserRequests = async (userId) => {
                 attributes: ['id', 'name', 'type', 'serial_number']
             }],
             order: [['created_at', 'DESC']]
+        };
+
+        if (!pagination) {
+            return await Request.findAll(queryOptions);
+        }
+
+        return await Request.findAndCountAll({
+            ...queryOptions,
+            distinct: true,
+            limit: pagination.limit,
+            offset: pagination.offset
         });
     } catch (error) {
         console.error("Database error in getUserRequests:", error);
@@ -123,7 +144,7 @@ const getUserRequests = async (userId) => {
 };
 
 // BE-016: Всички заявки за админ панела с филтри
-const getAllRequestsAdmin = async (filters) => {
+const getAllRequestsAdmin = async (filters, pagination = null) => {
     const { status, user_id, equipment_id, startDate, endDate } = filters;
     let whereClause = {};
 
@@ -137,7 +158,7 @@ const getAllRequestsAdmin = async (filters) => {
         if (endDate) whereClause.request_date[Op.lte] = new Date(endDate);
     }
 
-    return await Request.findAll({
+    const queryOptions = {
         where: whereClause,
         attributes: [
             'id',
@@ -173,6 +194,17 @@ const getAllRequestsAdmin = async (filters) => {
             }
         ],
         order: [['created_at', 'DESC']]
+    };
+
+    if (!pagination) {
+        return await Request.findAll(queryOptions);
+    }
+
+    return await Request.findAndCountAll({
+        ...queryOptions,
+        distinct: true,
+        limit: pagination.limit,
+        offset: pagination.offset
     });
 };
 
@@ -187,13 +219,13 @@ const createRequest = async (requestData) => {
     });
 };
 
-const getEquipmentConditionHistory = async (equipmentId) => {
+const getEquipmentConditionHistory = async (equipmentId, pagination = null) => {
     const equipment = await Equipment.findByPk(equipmentId);
     if (!equipment) {
         throw new Error('Equipment not found');
     }
 
-    return await ReturnConditionLog.findAll({
+    const queryOptions = {
         where: { equipment_id: equipmentId },
         attributes: ['id', 'request_id', 'equipment_id', 'condition', 'notes', 'recorded_at', 'created_at'],
         include: [
@@ -205,6 +237,17 @@ const getEquipmentConditionHistory = async (equipmentId) => {
             }
         ],
         order: [['recorded_at', 'DESC'], ['created_at', 'DESC']]
+    };
+
+    if (!pagination) {
+        return await ReturnConditionLog.findAll(queryOptions);
+    }
+
+    return await ReturnConditionLog.findAndCountAll({
+        ...queryOptions,
+        distinct: true,
+        limit: pagination.limit,
+        offset: pagination.offset
     });
 };
 

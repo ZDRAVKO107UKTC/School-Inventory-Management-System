@@ -1,15 +1,30 @@
 const { User } = require('../../models');
 const { Op } = require('sequelize');
 const bcrypt = require('bcrypt');
+const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
 
 const listUsers = async (req, res) => {
     try {
-        const users = await User.findAll({
+        const pagination = resolvePagination(req.query);
+        const queryOptions = {
             attributes: ['id', 'username', 'email', 'role', 'created_at'],
             order: [['created_at', 'DESC']]
-        });
+        };
 
-        return res.status(200).json({ users });
+        if (!pagination) {
+            const users = await User.findAll(queryOptions);
+            return res.status(200).json({ users });
+        }
+
+        const { count, rows } = await User.findAndCountAll({
+            ...queryOptions,
+            limit: pagination.limit,
+            offset: pagination.offset
+        });
+        const paginationMeta = buildPaginationMeta(count, pagination);
+        applyPaginationHeaders(res, paginationMeta);
+
+        return res.status(200).json({ users: rows, pagination: paginationMeta });
     } catch (error) {
         console.error('Error listing users:', error);
         return res.status(500).json({ message: 'Internal Server Error' });
