@@ -1,5 +1,54 @@
 const { Request, Equipment, User, ReturnConditionLog, sequelize } = require('../../models');
 const { Op, fn, col } = require('sequelize');
+const notificationService = require('./notificationService');
+
+const REQUEST_NOTIFICATION_INCLUDE = [
+    {
+        model: Equipment,
+        as: 'equipment',
+        attributes: ['id', 'name', 'type', 'serial_number', 'condition', 'status', 'quantity']
+    },
+    {
+        model: User,
+        as: 'user',
+        attributes: ['id', 'username', 'email', 'role']
+    },
+    {
+        model: User,
+        as: 'approver',
+        attributes: ['id', 'username', 'email', 'role'],
+        required: false
+    }
+];
+
+const loadRequestNotificationContext = async (requestId, transaction = null) => {
+    return Request.findByPk(requestId, {
+        attributes: [
+            'id',
+            'user_id',
+            'equipment_id',
+            'quantity',
+            'request_date',
+            'due_date',
+            'return_date',
+            'status',
+            'notes',
+            'approved_by',
+            'return_condition',
+            'return_notes',
+            'created_at',
+            'updated_at'
+        ],
+        include: REQUEST_NOTIFICATION_INCLUDE,
+        ...(transaction ? { transaction } : {})
+    });
+};
+
+const fireAndForgetNotification = (label, task) => {
+    Promise.resolve(task()).catch((error) => {
+        console.error(`[request-service] ${label} notification failed:`, error);
+    });
+};
 
 /**
  * Creates a new borrow request with full validation
@@ -31,7 +80,7 @@ const createBorrowRequest = async (requestData) => {
         throw error;
     }
 
-    return Request.create({
+    const createdRequest = await Request.create({
         user_id: requestData.user_id,
         equipment_id: requestData.equipment_id,
         quantity: requestData.quantity,
@@ -40,6 +89,13 @@ const createBorrowRequest = async (requestData) => {
         notes: requestData.notes,
         status: 'pending'
     });
+
+    const requestWithRelations = await loadRequestNotificationContext(createdRequest.id);
+    if (requestWithRelations) {
+        fireAndForgetNotification('request submitted', () => notificationService.sendRequestSubmittedNotifications(requestWithRelations));
+    }
+
+    return createdRequest;
 };
 
 /**
@@ -88,7 +144,7 @@ const getMyRequests = async (userId, pagination = null) => {
  * Admin: Approves a request and updates inventory
  */
 const approveRequest = async (requestId, approverId) => {
-    return sequelize.transaction(async (transaction) => {
+    const approvedRequest = await sequelize.transaction(async (transaction) => {
         const request = await Request.findByPk(requestId, {
             transaction,
             lock: transaction.LOCK.UPDATE
@@ -131,10 +187,14 @@ const approveRequest = async (requestId, approverId) => {
         equipment.status = equipment.quantity === 0 ? 'checked_out' : 'available';
         await equipment.save({ transaction });
 
-        request.equipment = equipment;
-
-        return request;
+        return loadRequestNotificationContext(request.id, transaction);
     });
+
+    if (approvedRequest) {
+        fireAndForgetNotification('request approved', () => notificationService.sendRequestApprovedNotification(approvedRequest));
+    }
+
+    return approvedRequest;
 };
 
 /**
@@ -144,17 +204,28 @@ const rejectRequest = async (requestId, rejectorId, reason) => {
     const request = await Request.findByPk(requestId);
     if (!request) throw new Error('Request not found');
 
+    if (request.status !== 'pending') {
+        throw new Error('Only pending requests can be rejected');
+    }
+
     request.status = 'rejected';
+    request.approved_by = rejectorId;
     if (reason) request.notes = reason;
     await request.save();
-    return request;
+
+    const requestWithRelations = await loadRequestNotificationContext(request.id);
+    if (requestWithRelations) {
+        fireAndForgetNotification('request rejected', () => notificationService.sendRequestRejectedNotification(requestWithRelations, reason));
+    }
+
+    return requestWithRelations || request;
 };
 
 /**
  * User: Returns equipment
  */
 const returnRequest = async (requestId, userId, condition, notes, actorRole) => {
-    return sequelize.transaction(async (transaction) => {
+    const result = await sequelize.transaction(async (transaction) => {
         const request = await Request.findByPk(requestId, {
             attributes: [
                 'id',
@@ -218,8 +289,21 @@ const returnRequest = async (requestId, userId, condition, notes, actorRole) => 
         if (condition) request.equipment.condition = condition;
         await request.equipment.save({ transaction });
 
-        return request;
+        const requestWithRelations = await loadRequestNotificationContext(request.id, transaction);
+        return {
+            request: requestWithRelations || request,
+            actor: isPrivileged ? await User.findByPk(userId, {
+                attributes: ['id', 'username', 'email', 'role'],
+                transaction
+            }) : requestWithRelations?.user || null
+        };
     });
+
+    if (result?.request) {
+        fireAndForgetNotification('request returned', () => notificationService.sendRequestReturnedNotifications(result.request, result.actor));
+    }
+
+    return result.request;
 };
 
 /**

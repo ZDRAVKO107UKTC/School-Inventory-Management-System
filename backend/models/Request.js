@@ -100,6 +100,11 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'request_id',
       as: 'conditionLogs'
     });
+
+    Request.hasMany(models.NotificationDelivery, {
+      foreignKey: 'request_id',
+      as: 'notificationDeliveries'
+    });
   };
 
   return Request;

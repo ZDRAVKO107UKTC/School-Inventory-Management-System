@@ -77,6 +77,11 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'equipment_id',
       as: 'conditionLogs'
     });
+
+    Equipment.hasMany(models.NotificationDelivery, {
+      foreignKey: 'equipment_id',
+      as: 'notificationDeliveries'
+    });
     Equipment.belongsTo(models.Room, {
       foreignKey: 'room_id',
       as: 'room'

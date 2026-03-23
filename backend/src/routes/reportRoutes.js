@@ -6,6 +6,8 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authMiddlew
 router.get('/usage', authenticateToken, authorizeRoles('admin'), reportController.getUsageReport);
 router.get('/history', authenticateToken, authorizeRoles('admin'), reportController.getHistoryReport);
 router.get('/export', authenticateToken, authorizeRoles('admin'), reportController.exportReport);
+router.get('/notifications/summary', authenticateToken, authorizeRoles('admin'), reportController.getNotificationSummary);
+router.post('/notifications/run', authenticateToken, authorizeRoles('admin'), reportController.runNotificationCycle);
 
 // Reset history
 router.delete('/history', authenticateToken, authorizeRoles('admin'), reportController.clearHistory);

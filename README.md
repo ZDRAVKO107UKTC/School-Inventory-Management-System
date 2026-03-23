@@ -93,6 +93,17 @@ npm run db:reset
 You can also override service URLs in gateway with:
 - `AUTH_SERVICE_URL`, `USER_SERVICE_URL`, `ADMIN_SERVICE_URL`, `EQUIPMENT_SERVICE_URL`, `REQUEST_SERVICE_URL`, `REPORT_SERVICE_URL`, `SPATIAL_SERVICE_URL`
 
+Email and reminder settings:
+- `EMAIL_ENABLED=true|false`
+- `EMAIL_FROM=no-reply@school-inventory.local`
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`
+- `LOW_STOCK_THRESHOLD=2`
+- `REMINDER_JOB_INTERVAL_MS=21600000`
+
+Admin reminder endpoints:
+- `GET /api/reports/notifications/summary`
+- `POST /api/reports/notifications/run`
+
 ## Runtime Mode
 
 - Backend is **microservices-only**.

@@ -1,4 +1,5 @@
 const requestService = require('../services/requestService');
+const notificationService = require('../services/notificationService');
 const { Parser } = require('json2csv');
 const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
 
@@ -112,9 +113,34 @@ const clearHistory = async (req, res) => {
     }
 };
 
+const getNotificationSummary = async (_req, res) => {
+    try {
+        const summary = await notificationService.getNotificationSummary();
+        return res.status(200).json(summary);
+    } catch (error) {
+        console.error('Notification Summary Error:', error);
+        return res.status(500).json({ message: 'Failed to load notification summary' });
+    }
+};
+
+const runNotificationCycle = async (_req, res) => {
+    try {
+        const result = await notificationService.processNotificationCycle();
+        return res.status(200).json({
+            message: 'Notification cycle completed',
+            result
+        });
+    } catch (error) {
+        console.error('Notification Run Error:', error);
+        return res.status(500).json({ message: 'Failed to run notification cycle' });
+    }
+};
+
 module.exports = {
     getUsageReport,
     getHistoryReport,
     exportReport,
-    clearHistory
+    clearHistory,
+    getNotificationSummary,
+    runNotificationCycle
 };

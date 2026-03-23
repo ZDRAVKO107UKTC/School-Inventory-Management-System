@@ -1043,7 +1043,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="336" />
+    <option name="cachedIndexableFilesCount" value="343" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -1106,6 +1106,9 @@
     "HTTP Request.security_test | 0. Login to get Token.executor": "Run",
     "HTTP Request.security_test | 1. LOGIN AS ADMIN.executor": "Run",
     "HTTP Request.security_test | 2. LOGIN AS STUDENT.executor": "Run",
+    "Docker.backend: Compose Deployment.executor": "Run",
+    "HTTP Request.All in test_equipment.executor": "Run",
+    "HTTP Request.All in test_log.executor": "Run",
     "HTTP Request.test_equipment | Test Get Existing Equipment.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Node.js.app.js.executor": "Run",
@@ -1121,6 +1124,7 @@
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "BE-25/26-FIX",
+    "git-widget-placeholder": "BE-35-36",
     "ignore.virus.scanning.warn.message": "true",
     "javascript.preferred.runtime.type.id": "node",
     "junie.onboarding.icon.badge.shown": "true",
@@ -1132,6 +1136,7 @@
     "settings.editor.selected.configurable": "ml.llm.LLMConfigurable",
     "to.speed.mode.migration.done": "true",
     "ts.external.directory.path": "D:\\OTHER GAMES\\stem_classroom_project\\School-Inventory-Management-System\\frontend\\node_modules\\typescript\\lib",
+    "ts.external.directory.path": "C:\\Users\\zdrav\\Documents\\GitHub\\School-Inventory-Management-System\\frontend\\node_modules\\typescript\\lib",
     "vue.rearranger.settings.migration": "true"
   },
   "keyToStringList": {
@@ -1226,6 +1231,7 @@
       <workItem from="1773936542282" duration="1401000" />
       <workItem from="1774212880658" duration="398000" />
       <workItem from="1774217291610" duration="5593000" />
+      <workItem from="1774212880658" duration="6599000" />
     </task>
     <task id="LOCAL-00001" summary="working auth">
       <option name="closed" value="true" />

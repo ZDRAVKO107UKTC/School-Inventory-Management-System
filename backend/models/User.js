@@ -63,6 +63,11 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'user_id',
       as: 'refreshTokens'
     });
+
+    User.hasMany(models.NotificationDelivery, {
+      foreignKey: 'user_id',
+      as: 'notificationDeliveries'
+    });
   };
 
   return User;
