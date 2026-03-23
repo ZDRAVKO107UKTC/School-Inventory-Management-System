@@ -4,7 +4,7 @@ const equipmentRoutes = require('../../../src/routes/equipmentRoutes');
 const app = createServiceApp({
     serviceName: 'equipment-service',
     mountRoutes: (expressApp) => {
-        expressApp.use('/api/equipment', equipmentRoutes);
+        expressApp.use('/', equipmentRoutes);
     }
 });
 

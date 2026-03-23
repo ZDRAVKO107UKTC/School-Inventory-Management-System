@@ -4,7 +4,8 @@ const userRoutes = require('../../../src/routes/userRoutes');
 const app = createServiceApp({
     serviceName: 'user-service',
     mountRoutes: (expressApp) => {
-        expressApp.use('/api/users', userRoutes);
+        // Change this to '/' to avoid nested prefix issues from gateway forwarding
+        expressApp.use('/', userRoutes);
     }
 });
 

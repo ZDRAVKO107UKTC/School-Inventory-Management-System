@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-app.use(express.json());
+// Removed app.use(express.json()) to prevent body consumption before proxy forwarding
 
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -19,7 +19,7 @@ const generalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5,
+    max: 9999, // Removed strict limit for local dev
     standardHeaders: true,
     legacyHeaders: false,
     message: {message: "Too many login attempts. Please wait 15 minutes."}
@@ -38,15 +38,7 @@ const services = {
 const proxy = (target, prefixToRemove) => createProxyMiddleware({
     target,
     changeOrigin: true,
-    pathRewrite: {[`^${prefixToRemove}`]: ''},
-    onProxyReq: (proxyReq, req, res) => {
-        if (req.body) {
-            const bodyData = JSON.stringify(req.body);
-            proxyReq.setHeader('Content-Type', 'application/json');
-            proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
-            proxyReq.write(bodyData);
-        }
-    }
+    pathRewrite: {[`^${prefixToRemove}`]: ''}
 });
 
 app.get('/health', (_req, res) => {
@@ -70,7 +62,7 @@ app.use('/api/auth', authLimiter, proxy(services.auth, '/api/auth'));
 app.use('/api/users', generalLimiter, proxy(services.user, '/api/users'));
 app.use('/api/admin', generalLimiter, proxy(services.admin, '/api/admin'));
 app.use('/api/equipment', generalLimiter, proxy(services.equipment, '/api/equipment'));
-app.use('/api/request', generalLimiter, express.json(), proxy(services.request, '/api/request'));
+app.use('/api/request', generalLimiter, proxy(services.request, '/api/request'));
 app.use('/api/requests', generalLimiter, proxy(services.request, '/api/requests'));
 app.use('/api/reports', generalLimiter, proxy(services.report, '/api/reports'));
 app.use('/api/spatial', generalLimiter, proxy(services.spatial, '/api/spatial'));

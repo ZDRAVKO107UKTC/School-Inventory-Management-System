@@ -4,7 +4,7 @@ const spatialRoutes = require('../../../src/routes/spatialRoutes');
 const app = createServiceApp({
     serviceName: 'spatial-service',
     mountRoutes: (expressApp) => {
-        expressApp.use('/api/spatial', spatialRoutes);
+        expressApp.use('/', spatialRoutes);
     }
 });
 
