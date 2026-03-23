@@ -110,7 +110,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => 
         <InteractiveBackground theme={theme} />
 
         {/* Theme Toggle */}
-        <ThemeToggle defaultTheme={theme} onThemeChange={setTheme} />
+        <ThemeToggle
+          defaultTheme={theme}
+          onThemeChange={setTheme}
+          className="fixed top-4 right-4 sm:top-6 sm:right-6 z-30"
+        />
 
         {/* Main Container */}
         <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-12">

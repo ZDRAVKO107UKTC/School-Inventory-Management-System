@@ -91,7 +91,7 @@ export const FloorPlanMap: React.FC<FloorPlanMapProps> = ({
   };
 
   return (
-    <div className="relative w-full aspect-[16/9] bg-white dark:bg-[#1d1d1f] rounded-2xl border border-[#d2d2d7] dark:border-[#303030] overflow-hidden shadow-sm">
+    <div className="relative w-full h-full min-h-0 bg-white dark:bg-[#1d1d1f] rounded-2xl border border-[#d2d2d7] dark:border-[#303030] overflow-hidden shadow-sm">
       {/* Toolbar - Only Zoom for all users */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
         <div className="bg-white/80 dark:bg-[#1d1d1f]/80 backdrop-blur-md p-1.5 rounded-xl border border-[#d2d2d7] dark:border-[#303030] flex flex-col gap-1 shadow-lg">

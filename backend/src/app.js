@@ -10,6 +10,7 @@ const requestRoutes = require('./routes/requestRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const userRoutes = require('./routes/userRoutes');
 const spatialRoutes = require('./routes/spatialRoutes');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
@@ -32,10 +33,7 @@ app.get('/', (req, res) => {
     res.send('School Inventory Management System API is running...');
 });
 
-// Error handling middleware (по избор, но силно препоръчително)
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ message: 'Something went wrong!' });
-});
+// Centralized error handling
+app.use(errorHandler);
 
 module.exports = app;
