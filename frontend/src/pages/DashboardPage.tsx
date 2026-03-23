@@ -93,6 +93,11 @@ const DashboardPage: React.FC = () => {
   const [editUserModal, setEditUserModal] = useState<User | null>(null);
   const [editFloorModal, setEditFloorModal] = useState<Floor | null>(null);
   const [editRoomModal, setEditRoomModal] = useState<Room | null>(null);
+  const [isCreateFloorModalOpen, setIsCreateFloorModalOpen] = useState(false);
+  const [newFloorName, setNewFloorName] = useState('');
+  const [isDeleteFloorModalOpen, setIsDeleteFloorModalOpen] = useState(false);
+  const [floorToDeleteId, setFloorToDeleteId] = useState<number | null>(null);
+  const [isResetHistoryModalOpen, setIsResetHistoryModalOpen] = useState(false);
   const [conditionHistoryModal, setConditionHistoryModal] = useState<{ id: number; name: string } | null>(null);
   const [historyModal, setHistoryModal] = useState<{ type: 'user' | 'equipment', id: number, title: string } | null>(null);
 
@@ -215,10 +220,16 @@ const DashboardPage: React.FC = () => {
 
   const handleResetHistory = async () => {
     if (!token) return;
-    if (!window.confirm("ARE YOU SURE? This will permanently erase ALL borrowing activity and condition logs. This action cannot be undone.")) return;
+    setIsResetHistoryModalOpen(true);
+  };
+
+  const handleResetHistorySubmit = async () => {
+    if (!token) return;
     const res = await resetSystemHistory(token);
     if (res.success) {
-      alert("System history has been reset.");
+      setIsResetHistoryModalOpen(false);
+      setMessage('System history has been reset.');
+      setTimeout(() => setMessage(null), 3000);
       fetchData();
     } else {
       alert(res.error || "Failed to reset history");
@@ -249,11 +260,24 @@ const DashboardPage: React.FC = () => {
   }, [isAuthenticated, navigate, searchTerm, token, selectedRoomId, currentFloorId]);
 
   const handleCreateFloor = async () => {
+    setNewFloorName(`Floor ${floors.length + 1}`);
+    setIsCreateFloorModalOpen(true);
+  };
+
+  const handleCreateFloorSubmit = async () => {
     if (!token) return;
-    const name = prompt('Floor Name (e.g., Floor 1):');
-    if (!name) return;
+    const name = newFloorName.trim();
+    if (!name) {
+      setError('Floor name is required.');
+      return;
+    }
+
     const res = await createFloor(token, { name, level: floors.length + 1 });
     if (res.success) {
+      setIsCreateFloorModalOpen(false);
+      setNewFloorName('');
+      setMessage('Floor created successfully.');
+      setTimeout(() => setMessage(null), 3000);
       fetchData();
       if (res.data?.floor) setCurrentFloorId(res.data.floor.id);
     } else alert(res.error || 'Failed to create floor');
@@ -280,11 +304,20 @@ const DashboardPage: React.FC = () => {
 
   const handleDeleteFloor = async (id: number) => {
     if (!token || !isAdmin) return;
-    if (!confirm('Are you sure you want to delete this floor? All rooms will be removed.')) return;
-    const res = await deleteFloor(token, id);
+    setFloorToDeleteId(id);
+    setIsDeleteFloorModalOpen(true);
+  };
+
+  const handleDeleteFloorSubmit = async () => {
+    if (!token || !isAdmin || floorToDeleteId == null) return;
+    const res = await deleteFloor(token, floorToDeleteId);
     if (res.success) {
-      if (currentFloorId === id) setCurrentFloorId(null);
+      if (currentFloorId === floorToDeleteId) setCurrentFloorId(null);
+      setIsDeleteFloorModalOpen(false);
+      setFloorToDeleteId(null);
       fetchData();
+      setMessage('Floor deleted.');
+      setTimeout(() => setMessage(null), 3000);
     } else alert(res.error || 'Failed to delete floor');
   };
 
@@ -1175,6 +1208,105 @@ const DashboardPage: React.FC = () => {
             <div className="flex gap-3 pt-5 mt-4 border-t">
               <Button className="flex-1" variant="secondary" onClick={() => setEditFloorModal(null)}>Cancel</Button>
               <Button className="flex-1" onClick={handleUpdateFloor}>Update Name</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCreateFloorModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-md p-4" onClick={() => setIsCreateFloorModalOpen(false)}>
+          <div
+            className="w-full max-w-md rounded-3xl border border-[#8fb0ff]/45 dark:border-[#3a5aa8]/55 bg-gradient-to-br from-[#f8fbff]/98 via-[#eef4ff]/96 to-[#e7f0ff]/94 dark:from-[#08142e]/98 dark:via-[#0a1a3d]/96 dark:to-[#0d2458]/94 shadow-[0_24px_70px_-28px_rgba(11,39,96,0.85)] p-6 sm:p-7"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="mb-4">
+              <h3 className="font-black uppercase tracking-[0.16em] text-3xl text-[#1d1d1f] dark:text-[#e9eefc]">Create Floor</h3>
+              <p className="mt-1 text-sm text-[#415a8b] dark:text-[#a7b8e8]">Add a new level to the spatial map.</p>
+            </div>
+
+            <Input
+              label="Floor Name"
+              value={newFloorName}
+              onChange={e => setNewFloorName(e.target.value)}
+              placeholder="e.g., Floor 1"
+            />
+
+            <div className="flex gap-3 pt-5 mt-5 border-t border-[#5f79bc]/35">
+              <Button
+                className="flex-1 h-12 !rounded-xl !font-black !tracking-wide !text-[#1d1d1f] dark:!text-[#e9eefc]"
+                variant="secondary"
+                onClick={() => setIsCreateFloorModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 h-12 !rounded-xl !font-black !tracking-wide !bg-[#0066cc] hover:!bg-[#0b73e8] !text-white"
+                onClick={handleCreateFloorSubmit}
+              >
+                Create Floor
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isDeleteFloorModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-md p-4" onClick={() => { setIsDeleteFloorModalOpen(false); setFloorToDeleteId(null); }}>
+          <div
+            className="w-full max-w-md rounded-3xl border border-[#8fb0ff]/45 dark:border-[#3a5aa8]/55 bg-gradient-to-br from-[#f8fbff]/98 via-[#eef4ff]/96 to-[#e7f0ff]/94 dark:from-[#08142e]/98 dark:via-[#0a1a3d]/96 dark:to-[#0d2458]/94 shadow-[0_24px_70px_-28px_rgba(11,39,96,0.85)] p-6 sm:p-7"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="mb-4">
+              <h3 className="font-black uppercase tracking-[0.16em] text-3xl text-[#1d1d1f] dark:text-[#e9eefc]">Delete Floor</h3>
+              <p className="mt-1 text-sm text-[#415a8b] dark:text-[#a7b8e8]">Are you sure you want to delete this floor? All rooms will be removed.</p>
+            </div>
+
+            <div className="flex gap-3 pt-5 mt-5 border-t border-[#5f79bc]/35">
+              <Button
+                className="flex-1 h-12 !rounded-xl !font-black !tracking-wide !text-[#1d1d1f] dark:!text-[#e9eefc]"
+                variant="secondary"
+                onClick={() => { setIsDeleteFloorModalOpen(false); setFloorToDeleteId(null); }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 h-12 !rounded-xl !font-black !tracking-wide"
+                variant="destructive"
+                onClick={handleDeleteFloorSubmit}
+              >
+                Delete Floor
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isResetHistoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-md p-4" onClick={() => setIsResetHistoryModalOpen(false)}>
+          <div
+            className="w-full max-w-md rounded-3xl border border-[#8fb0ff]/45 dark:border-[#3a5aa8]/55 bg-gradient-to-br from-[#f8fbff]/98 via-[#eef4ff]/96 to-[#e7f0ff]/94 dark:from-[#08142e]/98 dark:via-[#0a1a3d]/96 dark:to-[#0d2458]/94 shadow-[0_24px_70px_-28px_rgba(11,39,96,0.85)] p-6 sm:p-7"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="mb-4">
+              <h3 className="font-black uppercase tracking-[0.16em] text-3xl text-[#1d1d1f] dark:text-[#e9eefc]">Reset History</h3>
+              <p className="mt-1 text-sm text-[#415a8b] dark:text-[#a7b8e8]">This will permanently erase ALL borrowing activity and condition logs. This action cannot be undone.</p>
+            </div>
+
+            <div className="flex gap-3 pt-5 mt-5 border-t border-[#5f79bc]/35">
+              <Button
+                className="flex-1 h-12 !rounded-xl !font-black !tracking-wide !text-[#1d1d1f] dark:!text-[#e9eefc]"
+                variant="secondary"
+                onClick={() => setIsResetHistoryModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 h-12 !rounded-xl !font-black !tracking-wide"
+                variant="destructive"
+                onClick={handleResetHistorySubmit}
+              >
+                Reset Data
+              </Button>
             </div>
           </div>
         </div>

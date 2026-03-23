@@ -49,7 +49,11 @@ const AdminLoginPage: React.FC = () => {
     <div className={theme === 'dark' ? 'dark' : 'light'}>
       <div className="relative min-h-screen overflow-hidden">
         <InteractiveBackground theme={theme} />
-        <ThemeToggle defaultTheme={theme} onThemeChange={setTheme} />
+        <ThemeToggle
+          defaultTheme={theme}
+          onThemeChange={setTheme}
+          className="fixed top-4 right-4 sm:top-6 sm:right-6 z-30"
+        />
 
         <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-12">
           <div className="w-full max-w-md rounded-2xl border border-slate-200/50 dark:border-purple-500/20 bg-white/95 dark:bg-slate-900/85 backdrop-blur-xl p-6 sm:p-8 md:p-10 shadow-2xl dark:shadow-purple-500/10">

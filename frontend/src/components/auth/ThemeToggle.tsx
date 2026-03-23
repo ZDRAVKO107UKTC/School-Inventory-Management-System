@@ -4,11 +4,13 @@ import { Sun, Moon } from 'lucide-react';
 export interface ThemeToggleProps {
   defaultTheme?: 'light' | 'dark';
   onThemeChange?: (theme: 'light' | 'dark') => void;
+  className?: string;
 }
 
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   defaultTheme = 'dark',
   onThemeChange,
+  className = '',
 }) => {
   const handleToggle = () => {
     const newTheme = defaultTheme === 'light' ? 'dark' : 'light';
@@ -19,8 +21,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
     <button
       onClick={handleToggle}
       aria-label={`Switch to ${defaultTheme === 'light' ? 'dark' : 'light'} mode`}
-      className="
-        relative z-10
+      className={`
+        z-10
         flex items-center justify-center
         w-10 h-10 rounded-full
         bg-white/30 dark:bg-slate-900/30
@@ -30,7 +32,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         transition-all duration-300 ease-out
         hover:scale-105 active:scale-95
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-300 dark:focus-visible:ring-purple-500
-      "
+        ${className}
+      `}
     >
       {defaultTheme === 'light' ? (
         <Sun className="w-5 h-5 text-yellow-400" strokeWidth={2} />

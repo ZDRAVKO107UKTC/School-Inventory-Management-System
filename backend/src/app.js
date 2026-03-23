@@ -16,6 +16,7 @@ app.get('/', (req, res) => {
     res.send('School Inventory Management System API is running...');
 });
 
+// Centralized error handling
 app.use(errorHandler);
 
 module.exports = app;
