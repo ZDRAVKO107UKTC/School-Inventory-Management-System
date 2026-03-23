@@ -49,6 +49,10 @@ export interface Equipment {
   status: 'available' | 'checked_out' | 'under_repair' | 'retired';
   location: string | null;
   photo_url: string | null;
+  photo_preview_url?: string | null;
+  photo_thumbnail_url?: string | null;
+  photo_preview_mode?: 'image' | 'iframe' | 'external' | null;
+  photo_preview_provider?: string | null;
   quantity: number;
   room_id: number | null;
   room?: {

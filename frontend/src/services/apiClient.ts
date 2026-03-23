@@ -16,7 +16,41 @@ interface RequestOptions {
 interface ErrorPayload {
   message?: string;
   error?: string;
+  errors?: Array<{
+    msg?: string;
+    message?: string;
+    path?: string;
+  }>;
 }
+
+const getErrorMessage = (payload: unknown, status: number): string => {
+  if (!payload || typeof payload !== 'object') {
+    return `Request failed with status ${status}`;
+  }
+
+  const errorPayload = payload as ErrorPayload;
+  if (typeof errorPayload.message === 'string' && errorPayload.message.trim()) {
+    return errorPayload.message;
+  }
+
+  if (typeof errorPayload.error === 'string' && errorPayload.error.trim()) {
+    return errorPayload.error;
+  }
+
+  if (Array.isArray(errorPayload.errors) && errorPayload.errors.length > 0) {
+    const firstValidationError = errorPayload.errors.find(
+      (entry) =>
+        typeof entry?.msg === 'string' && entry.msg.trim()
+        || typeof entry?.message === 'string' && entry.message.trim(),
+    );
+
+    if (firstValidationError) {
+      return firstValidationError.msg || firstValidationError.message || `Request failed with status ${status}`;
+    }
+  }
+
+  return `Request failed with status ${status}`;
+};
 
 const buildUrl = (path: string): string => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
@@ -54,10 +88,9 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
           window.location.href = '/auth?expired=true';
         }
       }
-      const errorPayload = payload as ErrorPayload;
       return {
         success: false,
-        error: errorPayload.message || errorPayload.error || `Request failed with status ${response.status}`,
+        error: getErrorMessage(payload, response.status),
       };
     }
 

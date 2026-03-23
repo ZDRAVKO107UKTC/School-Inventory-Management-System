@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   Shield, LogOut, UserPlus, UserCog, UserX, Boxes, Trash2, CheckCircle2,
   XCircle, LayoutDashboard, ChevronDown, Package, Clock, ArchiveX,
-  RotateCcw, Download, Plus, AlertCircle, Tag, MapPin, Camera, Edit, History,
+  RotateCcw, Download, Plus, AlertCircle, Tag, MapPin, Edit, History,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ThemeToggle } from '@/components/auth/ThemeToggle';
 import { InteractiveBackground } from '@/components/auth/InteractiveBackground';
 import { Button } from '@/components/ui/Button';
+import { EquipmentMediaPreview } from '@/components/ui/EquipmentMediaPreview';
 import { Input } from '@/components/ui/Input';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -504,13 +505,7 @@ const AdminDashboardPage: React.FC = () => {
                       <article key={item.id} className="relative rounded-2xl border border-slate-200/80 dark:border-slate-700 bg-gradient-to-r from-white to-slate-50 dark:from-slate-900/80 dark:to-slate-800/60 p-3 overflow-visible">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                           <div className="flex gap-3 items-start">
-                            {item.photo_url ? (
-                              <img src={item.photo_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover shrink-0 border border-slate-200 dark:border-slate-600" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                            ) : (
-                              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                                <Camera className="w-4 h-4 text-slate-400" />
-                              </div>
-                            )}
+                            <EquipmentMediaPreview item={item} />
                             <div>
                               <p className="font-semibold text-slate-900 dark:text-slate-100">{item.name}</p>
                               <p className="text-sm text-slate-600 dark:text-slate-400">{item.type} • Qty {item.quantity}</p>
@@ -628,6 +623,7 @@ const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              <EquipmentMediaPreview item={editEquipmentModal} variant="panel" />
               <Input label="Name" value={editEquipmentModal.name} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, name: e.target.value })} />
               <Input label="Type" value={editEquipmentModal.type} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, type: e.target.value })} />
               <div>
@@ -644,6 +640,9 @@ const AdminDashboardPage: React.FC = () => {
               <Input label="Serial #" value={editEquipmentModal.serial_number || ''} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, serial_number: e.target.value })} />
               <Input label="Location" value={editEquipmentModal.location || ''} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, location: e.target.value })} />
               <Input label="Photo URL" value={editEquipmentModal.photo_url || ''} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, photo_url: e.target.value })} />
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Cloudinary and Google Drive or Docs links now return preview-friendly metadata after save.
+              </p>
             </div>
             <div className="flex gap-3 pt-5 mt-4 border-t border-slate-100 dark:border-slate-800">
               <Button className="flex-1" variant="secondary" onClick={() => setEditEquipmentModal(null)}>Cancel</Button>

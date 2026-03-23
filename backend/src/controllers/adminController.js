@@ -3,6 +3,9 @@ const { Op } = require('sequelize');
 const bcrypt = require('bcrypt');
 const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
 
+const VALID_ROLES = ['student', 'teacher', 'admin'];
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
 const listUsers = async (req, res) => {
     try {
         const pagination = resolvePagination(req.query);
@@ -34,19 +37,25 @@ const listUsers = async (req, res) => {
 const createUser = async (req, res) => {
     try {
         const { username, email, password, role } = req.body;
+        const normalizedUsername = typeof username === 'string' ? username.trim() : '';
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+        const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : '';
 
-        // Validate required fields
-        if (!username || !email || !password || !role) {
+        if (!normalizedUsername || !normalizedEmail || !password || !normalizedRole) {
             return res.status(400).json({
                 message: "Missing required fields: username, email, password, role"
             });
         }
 
-        // Validate role
-        const validRoles = ['student', 'teacher', 'admin'];
-        if (!validRoles.includes(role)) {
+        if (!VALID_ROLES.includes(normalizedRole)) {
             return res.status(400).json({
-                message: `Invalid role. Allowed values: ${validRoles.join(', ')}`
+                message: `Invalid role. Allowed values: ${VALID_ROLES.join(', ')}`
+            });
+        }
+
+        if (!isValidEmail(normalizedEmail)) {
+            return res.status(400).json({
+                message: 'A valid email address is required'
             });
         }
 
@@ -56,13 +65,9 @@ const createUser = async (req, res) => {
             });
         }
 
-        const normalizedUsername = username.trim();
-        const normalizedEmail = email.trim().toLowerCase();
-
-        // Check if user already exists
         const existingUser = await User.findOne({
             where: {
-                [require('sequelize').Op.or]: [
+                [Op.or]: [
                     { email: normalizedEmail },
                     { username: normalizedUsername }
                 ]
@@ -83,7 +88,7 @@ const createUser = async (req, res) => {
             username: normalizedUsername,
             email: normalizedEmail,
             password_hash: hashedPassword,
-            role
+            role: normalizedRole
         });
 
         // Return user without password hash
@@ -102,20 +107,18 @@ const createUser = async (req, res) => {
 const updateUserRole = async (req, res) => {
     try {
         const { id } = req.params;
-        const { role } = req.body;
-        const validRoles = ['student', 'teacher', 'admin'];
-        if (!role || !validRoles.includes(role)) {
-            return res.status(400).json({ message: `Invalid role. Allowed values: ${validRoles.join(', ')}` });
+        const normalizedRole = typeof req.body.role === 'string' ? req.body.role.trim().toLowerCase() : '';
+        if (!normalizedRole || !VALID_ROLES.includes(normalizedRole)) {
+            return res.status(400).json({ message: `Invalid role. Allowed values: ${VALID_ROLES.join(', ')}` });
         }
         const user = await User.findByPk(id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
         const oldRole = user.role;
-        user.role = role;
+        user.role = normalizedRole;
         await user.save();
-        // Audit log
-        console.log(`[AUDIT] Admin ${req.user.userId} changed role of user ${user.id} from ${oldRole} to ${role} at ${new Date().toISOString()}`);
+        console.log(`[AUDIT] Admin ${req.user.userId} changed role of user ${user.id} from ${oldRole} to ${normalizedRole} at ${new Date().toISOString()}`);
         return res.status(200).json({
             message: 'User role updated successfully',
             user: {
@@ -170,19 +173,38 @@ const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const { username, email, role } = req.body;
+        const normalizedUsername = typeof username === 'string' ? username.trim() : undefined;
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : undefined;
+        const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : undefined;
+
+        if (normalizedUsername === undefined && normalizedEmail === undefined && normalizedRole === undefined) {
+            return res.status(400).json({ message: 'At least one of username, email, or role is required' });
+        }
+
+        if (normalizedUsername !== undefined && !normalizedUsername) {
+            return res.status(400).json({ message: 'Username cannot be empty' });
+        }
+
+        if (normalizedEmail !== undefined && (!normalizedEmail || !isValidEmail(normalizedEmail))) {
+            return res.status(400).json({ message: 'A valid email address is required' });
+        }
+
+        if (normalizedRole !== undefined && !VALID_ROLES.includes(normalizedRole)) {
+            return res.status(400).json({ message: `Invalid role. Allowed values: ${VALID_ROLES.join(', ')}` });
+        }
+
         const user = await User.findByPk(id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Check for conflicts if username or email is changing
-        if (username || email) {
+        if (normalizedUsername !== undefined || normalizedEmail !== undefined) {
             const conflictWhere = {
                 [Op.or]: [],
                 id: { [Op.ne]: id }
             };
-            if (username) conflictWhere[Op.or].push({ username: username.trim() });
-            if (email) conflictWhere[Op.or].push({ email: email.trim().toLowerCase() });
+            if (normalizedUsername !== undefined) conflictWhere[Op.or].push({ username: normalizedUsername });
+            if (normalizedEmail !== undefined) conflictWhere[Op.or].push({ email: normalizedEmail });
 
             if (conflictWhere[Op.or].length > 0) {
                 const existingUser = await User.findOne({ where: conflictWhere });
@@ -192,14 +214,9 @@ const updateUser = async (req, res) => {
             }
         }
 
-        if (username) user.username = username.trim();
-        if (email) user.email = email.trim().toLowerCase();
-        if (role) {
-            const validRoles = ['student', 'teacher', 'admin'];
-            if (validRoles.includes(role)) {
-                user.role = role;
-            }
-        }
+        if (normalizedUsername !== undefined) user.username = normalizedUsername;
+        if (normalizedEmail !== undefined) user.email = normalizedEmail;
+        if (normalizedRole !== undefined) user.role = normalizedRole;
 
         await user.save();
         return res.status(200).json({

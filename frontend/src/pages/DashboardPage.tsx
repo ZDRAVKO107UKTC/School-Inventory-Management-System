@@ -6,6 +6,7 @@ import { Menu, Search, LogOut, Package, History, CalendarClock, Building, Chevro
 import { ThemeToggle } from '@/components/auth/ThemeToggle';
 import { InteractiveBackground } from '@/components/auth/InteractiveBackground';
 import { Button } from '@/components/ui/Button';
+import { EquipmentMediaPreview } from '@/components/ui/EquipmentMediaPreview';
 import { Input } from '@/components/ui/Input';
 import { useAuthStore } from '@/stores/authStore';
 import { getEquipmentList, getConditionHistory } from '@/services/inventoryService';
@@ -389,6 +390,7 @@ const DashboardPage: React.FC = () => {
 
     const result = await submitBorrowRequest(token, {
       equipment_id: equipmentId,
+      quantity: 1,
       request_date: now.toISOString(),
       due_date: due.toISOString(),
       notes: 'Requested from spatial dashboard',
@@ -1057,6 +1059,7 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              <EquipmentMediaPreview item={editEquipmentModal} variant="panel" />
               <Input label="Name" value={editEquipmentModal.name} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, name: e.target.value })} />
               <Input label="Type" value={editEquipmentModal.type} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, type: e.target.value })} />
               <div>
@@ -1073,6 +1076,9 @@ const DashboardPage: React.FC = () => {
               <Input label="Serial #" value={editEquipmentModal.serial_number || ''} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, serial_number: e.target.value })} />
               <Input label="Location" value={editEquipmentModal.location || ''} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, location: e.target.value })} />
               <Input label="Photo URL" value={editEquipmentModal.photo_url || ''} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, photo_url: e.target.value })} />
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Preview metadata is generated automatically for Cloudinary and Google Drive or Docs links.
+              </p>
             </div>
             <div className="flex gap-3 pt-5 mt-4 border-t border-slate-100 dark:border-slate-800">
               <Button className="flex-1" variant="secondary" onClick={() => setEditEquipmentModal(null)}>Cancel</Button>

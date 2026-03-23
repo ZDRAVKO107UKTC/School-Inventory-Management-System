@@ -7,8 +7,6 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-app.use(express.json());
-
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -17,12 +15,13 @@ const generalLimiter = rateLimit({
     message: {message: "Too many requests, please try again later."}
 });
 
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
+const loginLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 15,
     standardHeaders: true,
     legacyHeaders: false,
-    message: {message: "Too many login attempts. Please wait 15 minutes."}
+    skipSuccessfulRequests: true,
+    message: {message: "Too many sign-in attempts. Please wait 10 minutes and try again."}
 });
 
 const services = {
@@ -35,17 +34,11 @@ const services = {
     spatial: process.env.SPATIAL_SERVICE_URL || `http://127.0.0.1:${process.env.SPATIAL_SERVICE_PORT || 5007}`
 };
 
-const proxy = (target, prefixToRemove) => createProxyMiddleware({
+const proxy = (target, forwardedPrefix) => createProxyMiddleware({
     target,
     changeOrigin: true,
-    pathRewrite: {[`^${prefixToRemove}`]: ''},
-    onProxyReq: (proxyReq, req, res) => {
-        if (req.body) {
-            const bodyData = JSON.stringify(req.body);
-            proxyReq.setHeader('Content-Type', 'application/json');
-            proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
-            proxyReq.write(bodyData);
-        }
+    pathRewrite: (path) => {
+        return `${forwardedPrefix}${path}`;
     }
 });
 
@@ -66,11 +59,12 @@ app.get('/health', (_req, res) => {
     });
 });
 
-app.use('/api/auth', authLimiter, proxy(services.auth, '/api/auth'));
+app.use('/api/auth/login', loginLimiter, proxy(services.auth, '/api/auth/login'));
+app.use('/api/auth', generalLimiter, proxy(services.auth, '/api/auth'));
 app.use('/api/users', generalLimiter, proxy(services.user, '/api/users'));
 app.use('/api/admin', generalLimiter, proxy(services.admin, '/api/admin'));
 app.use('/api/equipment', generalLimiter, proxy(services.equipment, '/api/equipment'));
-app.use('/api/request', generalLimiter, express.json(), proxy(services.request, '/api/request'));
+app.use('/api/request', generalLimiter, proxy(services.request, '/api/request'));
 app.use('/api/requests', generalLimiter, proxy(services.request, '/api/requests'));
 app.use('/api/reports', generalLimiter, proxy(services.report, '/api/reports'));
 app.use('/api/spatial', generalLimiter, proxy(services.spatial, '/api/spatial'));

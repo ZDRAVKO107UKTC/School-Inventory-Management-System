@@ -5,7 +5,8 @@ const app = require('./app');
 
 const PORT = process.env.EQUIPMENT_SERVICE_PORT || 5004;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`equipment-service running on port ${PORT}`);
 });
 
+server.ref();

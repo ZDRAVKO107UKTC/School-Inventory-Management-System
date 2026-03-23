@@ -1,6 +1,12 @@
 const {Equipment, Request, User, ReturnConditionLog, Room} = require('../../models');
 const {Op} = require('sequelize');
 
+const isInitialConditionLogSchemaMismatch = (error) => (
+    error?.name === 'SequelizeDatabaseError'
+    && error?.original?.column === 'request_id'
+    && /null value/i.test(error?.original?.message || '')
+);
+
 const getEquipmentById = async (id) => {
     return await Equipment.findByPk(id, {
         include: [{
@@ -61,14 +67,24 @@ const getAllEquipment = async (filters, pagination = null) => {
 const createEquipment = async (data) => {
     const equipment = await Equipment.create(data);
 
-    // Log initial condition
     if (equipment.condition) {
-        await ReturnConditionLog.create({
-            equipment_id: equipment.id,
-            condition: equipment.condition,
-            notes: 'Initial registration',
-            recorded_at: new Date()
-        });
+        try {
+            await ReturnConditionLog.create({
+                request_id: null,
+                equipment_id: equipment.id,
+                condition: equipment.condition,
+                notes: 'Initial registration',
+                recorded_at: new Date()
+            });
+        } catch (error) {
+            if (isInitialConditionLogSchemaMismatch(error)) {
+                console.warn('[equipment-service] skipped initial condition log because request_id is still NOT NULL in the database schema');
+                return equipment;
+            }
+
+            await equipment.destroy();
+            throw error;
+        }
     }
 
     return equipment;

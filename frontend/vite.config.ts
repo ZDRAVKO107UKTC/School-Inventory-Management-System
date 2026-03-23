@@ -24,5 +24,32 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return undefined;
+          }
+
+          if (id.includes('three') || id.includes('@react-three')) {
+            return 'vendor-three';
+          }
+
+          if (id.includes('recharts') || id.includes('xlsx')) {
+            return 'vendor-reports';
+          }
+
+          if (id.includes('framer-motion')) {
+            return 'vendor-motion';
+          }
+
+          if (id.includes('react-router') || id.includes('@tanstack') || id.includes('zustand')) {
+            return 'vendor-app';
+          }
+
+          return 'vendor';
+        },
+      },
+    },
   },
 });
