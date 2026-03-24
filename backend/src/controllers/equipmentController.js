@@ -1,6 +1,39 @@
 const equipmentService = require('../services/equipmentService');
 const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
 
+const normalizeOptionalString = (value) => {
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+
+    const normalized = String(value).trim();
+    return normalized === '' ? null : normalized;
+};
+
+const normalizeEquipmentPayload = (body, { isPartial = false } = {}) => {
+    const payload = { ...body };
+
+    if (!isPartial || payload.quantity !== undefined) {
+        payload.quantity = payload.quantity === undefined ? 1 : Number(payload.quantity);
+    }
+
+    if (!isPartial || payload.serial_number !== undefined) {
+        payload.serial_number = normalizeOptionalString(payload.serial_number);
+    }
+
+    if (!isPartial || payload.location !== undefined) {
+        payload.location = normalizeOptionalString(payload.location);
+    }
+
+    if (!isPartial || payload.photo_url !== undefined) {
+        payload.photo_url = normalizeOptionalString(payload.photo_url);
+    }
+
+    return payload;
+};
+
+const isPersistenceError = (error) => ['SequelizeValidationError', 'SequelizeUniqueConstraintError'].includes(error.name);
+
 const getEquipmentDetails = async (req, res) => {
     try {
         const {id} = req.params;
@@ -112,16 +145,15 @@ const submitRequest = async (req, res) => {
 
 const createEquipment = async (req, res) => {
     try {
-        const { name, type, condition, quantity } = req.body;
+        const payload = normalizeEquipmentPayload(req.body);
+        const { name, type, condition, quantity } = payload;
 
-        // Validate required fields
         if (!name || !type || !condition || quantity === undefined) {
             return res.status(400).json({
                 message: "Missing required fields: name, type, condition, quantity"
             });
         }
 
-        // Validate condition
         const validConditions = ['new', 'good', 'fair', 'damaged'];
         if (!validConditions.includes(condition)) {
             return res.status(400).json({
@@ -129,20 +161,22 @@ const createEquipment = async (req, res) => {
             });
         }
 
-        // Validate quantity
-        if (quantity < 0) {
+        if (!Number.isInteger(quantity) || quantity < 0) {
             return res.status(400).json({
-                message: "Quantity must be a non-negative number"
+                message: "Quantity must be a non-negative integer"
             });
         }
 
-        const equipment = await equipmentService.createEquipment(req.body);
+        const equipment = await equipmentService.createEquipment(payload);
 
         return res.status(201).json({
             message: "Equipment created successfully",
             equipment
         });
     } catch (error) {
+        if (isPersistenceError(error)) {
+            return res.status(400).json({ message: error.errors?.[0]?.message || error.message });
+        }
         console.error("Error creating equipment:", error);
         return res.status(500).json({message: "Internal Server Error"});
     }
@@ -151,15 +185,19 @@ const createEquipment = async (req, res) => {
 const updateEquipment = async (req, res) => {
     try {
         const { id } = req.params;
-        const data = req.body;
-        // Basic validation
-        if (data.quantity !== undefined && data.quantity < 0) {
-            return res.status(400).json({ message: "Quantity must be a non-negative number" });
+        const data = normalizeEquipmentPayload(req.body, { isPartial: true });
+
+        if (data.quantity !== undefined && (!Number.isInteger(data.quantity) || data.quantity < 0)) {
+            return res.status(400).json({ message: "Quantity must be a non-negative integer" });
         }
+
         const updatedEquipment = await equipmentService.updateEquipment(id, data);
         if (!updatedEquipment) return res.status(404).json({ message: "Equipment not found" });
         return res.status(200).json({ message: "Equipment updated successfully", equipment: updatedEquipment });
     } catch (error) {
+        if (isPersistenceError(error)) {
+            return res.status(400).json({ message: error.errors?.[0]?.message || error.message });
+        }
         console.error("Error updating equipment:", error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
@@ -173,4 +211,4 @@ module.exports = {
     deleteEquipment,
     createEquipment,
     updateEquipment
-}
+};

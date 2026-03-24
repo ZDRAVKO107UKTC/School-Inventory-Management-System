@@ -74,6 +74,7 @@ const DashboardPage: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<GroupedEquipment | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [isSubmittingClaim, setIsSubmittingClaim] = useState(false);
 
   // Management Logic
   const [isAssigningMode, setIsAssigningMode] = useState(false);
@@ -415,22 +416,36 @@ const DashboardPage: React.FC = () => {
   const usageChartData = reportData.usage.length > 0 ? reportData.usage : fallbackUsageData;
 
   const onQuickBorrow = async (equipmentId: number) => {
-    if (!token) return;
+    if (!token || isSubmittingClaim) return false;
+
+    setError(null);
+    setMessage(null);
+    setIsSubmittingClaim(true);
+
     const now = new Date();
     const due = new Date(now);
     due.setDate(now.getDate() + 7);
 
-    const result = await submitBorrowRequest(token, {
-      equipment_id: equipmentId,
-      request_date: now.toISOString(),
-      due_date: due.toISOString(),
-      notes: 'Requested from spatial dashboard',
-    });
+    try {
+      const result = await submitBorrowRequest(token, {
+        equipment_id: equipmentId,
+        quantity: 1,
+        request_date: now.toISOString(),
+        due_date: due.toISOString(),
+        notes: 'Requested from spatial dashboard',
+      });
 
-    if (result.success) {
-      fetchData();
-    } else {
+      if (result.success) {
+        setMessage('Request submitted');
+        setTimeout(() => setMessage(null), 3000);
+        await fetchData();
+        return true;
+      }
+
       setError(result.error || 'Borrow request failed');
+      return false;
+    } finally {
+      setIsSubmittingClaim(false);
     }
   };
 
@@ -1070,7 +1085,24 @@ const DashboardPage: React.FC = () => {
                     <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Status</p><p className="text-sm uppercase font-black">{selectedItem.status}</p></div>
                     <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Availability</p><p className="text-sm font-bold">{selectedItem.availableQuantity} / {selectedItem.totalQuantity}</p></div>
                   </div>
-                  <Button className="mt-auto w-full py-8 rounded-[25px] text-xs font-black uppercase tracking-[0.2em]" onClick={() => { if (selectedItem) onQuickBorrow(selectedItem.id); setSelectedItem(null); }} disabled={selectedItem.status !== 'available' || (selectedItem.availableQuantity || 0) <= 0}>Process Claim</Button>
+                  <Button
+                    className="mt-auto w-full py-8 rounded-[25px] text-xs font-black uppercase tracking-[0.2em]"
+                    isLoading={isSubmittingClaim}
+                    onClick={async () => {
+                      if (!selectedItem) return;
+                      const submitted = await onQuickBorrow(selectedItem.id);
+                      if (submitted) {
+                        setSelectedItem(null);
+                      }
+                    }}
+                    disabled={
+                      isSubmittingClaim ||
+                      selectedItem.status !== 'available' ||
+                      (selectedItem.availableQuantity || 0) <= 0
+                    }
+                  >
+                    Process Claim
+                  </Button>
                 </div>
               </motion.div>
             </div>

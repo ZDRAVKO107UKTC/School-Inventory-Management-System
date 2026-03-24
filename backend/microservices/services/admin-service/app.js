@@ -4,9 +4,8 @@ const adminRoutes = require('../../../src/routes/adminRoutes');
 const app = createServiceApp({
     serviceName: 'admin-service',
     mountRoutes: (expressApp) => {
-        expressApp.use('/api/admin', adminRoutes);
+        expressApp.use('/', adminRoutes);
     }
 });
 
 module.exports = app;
-

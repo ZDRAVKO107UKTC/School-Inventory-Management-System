@@ -5,7 +5,9 @@ const app = require('./app');
 
 const PORT = process.env.ADMIN_SERVICE_PORT || 5003;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`admin-service running on port ${PORT}`);
 });
+
+server.ref();
 

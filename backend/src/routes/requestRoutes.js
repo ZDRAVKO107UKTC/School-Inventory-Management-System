@@ -9,10 +9,13 @@ const {body} = require('express-validator');
 const validateSubmitRequest = [
     body('equipment_id')
         .isInt()
-        .withMessage('Equipment ID must be a valid integer'),
+        .withMessage('Equipment ID must be a valid integer')
+        .toInt(),
     body('quantity')
+        .optional()
         .isInt({min: 1})
-        .withMessage('Quantity must be at least 1'),
+        .withMessage('Quantity must be at least 1')
+        .toInt(),
     body('request_date')
         .isISO8601()
         .withMessage('Valid start date is required (YYYY-MM-DD)'),
@@ -26,7 +29,7 @@ const validateSubmitRequest = [
 
 // --- ROUTES ---
 
-// Submit a new request (Includes the new validation layer)
+// Submit a new request
 router.post('/', authenticateToken, validateSubmitRequest, requestController.submitRequest);
 
 // Get current user's requests

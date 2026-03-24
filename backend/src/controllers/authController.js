@@ -8,19 +8,15 @@ const {validationResult} = require('express-validator');
 const xss = require('xss');
 
 const register = async (req, res, next) => {
-    console.log("Body received by Auth Service:", req.body);
-    // 1. Catch Validation Errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({errors: errors.array()});
     }
 
     try {
-        // 2. Sanitize Name Fields for XSS
         const userData = {
             ...req.body,
-            first_name: xss(req.body.first_name),
-            last_name: xss(req.body.last_name)
+            username: xss(req.body.username || '')
         };
 
         const user = await registerUser(userData);
@@ -35,7 +31,6 @@ const register = async (req, res, next) => {
 };
 
 const login = async (req, res, next) => {
-    // 1. Catch Validation Errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({errors: errors.array()});

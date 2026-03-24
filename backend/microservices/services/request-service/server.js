@@ -5,7 +5,9 @@ const app = require('./app');
 
 const PORT = process.env.REQUEST_SERVICE_PORT || 5005;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`request-service running on port ${PORT}`);
 });
+
+server.ref();
 
