@@ -208,3 +208,59 @@ Header:
 ```text
 Authorization: Bearer <admin-access-token>
 ```
+
+## Integration Status
+
+`GET /reports/integrations/status`
+
+Header:
+
+```text
+Authorization: Bearer <admin-access-token>
+```
+
+Returns backend integration readiness for Nodemailer, Cloudinary, and Google Sheets.
+
+## Upload Equipment Media
+
+`POST /equipment/media/upload`
+
+Header:
+
+```text
+Authorization: Bearer <admin-access-token>
+```
+
+Body:
+
+```json
+{
+  "file_name": "projector-manual.pdf",
+  "remote_url": "https://example.com/projector-manual.pdf",
+  "folder": "equipment-docs"
+}
+```
+
+You can also send `data_base64` plus `content_type` instead of `remote_url`.
+
+## Export Report to Google Sheets
+
+`POST /reports/export/google-sheets`
+
+Header:
+
+```text
+Authorization: Bearer <admin-access-token>
+```
+
+Body:
+
+```json
+{
+  "report_type": "usage",
+  "spreadsheet_title": "Inventory Usage Report",
+  "sheet_name": "March Usage",
+  "startDate": "2026-03-01",
+  "endDate": "2026-03-31"
+}
+```

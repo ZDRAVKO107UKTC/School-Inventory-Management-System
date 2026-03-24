@@ -7,9 +7,16 @@
     <list default="true" id="98e050de-4084-4ab4-b303-e143b3da6b6e" name="Changes" comment="" />
     <list default="true" id="98e050de-4084-4ab4-b303-e143b3da6b6e" name="Changes" comment="Refactor API route handling, improve service client configuration, and add admin login/dashboard routes.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/microservices/gateway/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/microservices/gateway/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/DashboardPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/DashboardPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/services/requestService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/services/requestService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/.env" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/API_REQUESTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/API_REQUESTS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/All_API_Requests.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/All_API_Requests.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/postman_collection.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/postman_collection.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/controllers/equipmentController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/controllers/equipmentController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/controllers/reportController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/controllers/reportController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/routes/equipmentRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/routes/equipmentRoutes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/routes/reportRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/routes/reportRoutes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/services/emailService.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/services/emailService.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -139,7 +146,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "fixes",
+    "git-widget-placeholder": "Additional-apies",
     "ignore.virus.scanning.warn.message": "true",
     "javascript.preferred.runtime.type.id": "node",
     "junie.onboarding.icon.badge.shown": "true",

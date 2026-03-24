@@ -44,6 +44,21 @@
       "key": "limit",
       "value": "10",
       "type": "string"
+    },
+    {
+      "key": "spreadsheetId",
+      "value": "1tsMgh8Es3UVe030EV30QWzXr3uj4XfHEmk3tqGR9J9o",
+      "type": "string"
+    },
+    {
+      "key": "reportSheetName",
+      "value": "Usage Report",
+      "type": "string"
+    },
+    {
+      "key": "googleServiceAccountEmail",
+      "value": "school-inventory@tech-academy-491222.iam.gserviceaccount.com",
+      "type": "string"
     }
   ],
   "item": [
@@ -236,7 +251,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"teacher@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"teacher@school.local\",\n  \"password\": \"Password123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
@@ -276,7 +291,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"admin@school.local\",\n  \"password\": \"Password123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
@@ -615,6 +630,38 @@
               ],
               "path": [
                 "equipment"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Equipment Media (Cloudinary)",
+          "request": {
+            "description": "Uploads a remote asset through the backend Cloudinary integration and returns a URL you can save into equipment.photo_url.",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"file_name\": \"sample.jpg\",\n  \"remote_url\": \"https://res.cloudinary.com/demo/image/upload/sample.jpg\",\n  \"folder\": \"equipment-media\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/equipment/media/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipment",
+                "media",
+                "upload"
               ]
             }
           }
@@ -1196,6 +1243,93 @@
                   "key": "limit",
                   "value": "{{limit}}"
                 }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Integration Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/integrations/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "integrations",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Export Usage Report to Google Sheets",
+          "request": {
+            "description": "Exports the usage report into Google Sheets. The collection variable `spreadsheetId` is prefilled with the backend default sheet. If you get `The caller does not have permission`, share the target sheet with `{{googleServiceAccountEmail}}` as Editor. You can also clear `spreadsheet_id` in the body to fall back to the backend default spreadsheet from `.env`.",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"report_type\": \"usage\",\n  \"spreadsheet_id\": \"{{spreadsheetId}}\",\n  \"sheet_name\": \"{{reportSheetName}}\",\n  \"write_mode\": \"replace\",\n  \"startDate\": \"2026-03-01\",\n  \"endDate\": \"2026-03-31\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reports/export/google-sheets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "export",
+                "google-sheets"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Export History Report to Google Sheets",
+          "request": {
+            "description": "Exports the history report into Google Sheets. If you get `The caller does not have permission`, share the target sheet with `{{googleServiceAccountEmail}}` as Editor. The body currently uses the `spreadsheetId` collection variable so you can switch sheets without editing the request path.",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"report_type\": \"history\",\n  \"spreadsheet_id\": \"{{spreadsheetId}}\",\n  \"sheet_name\": \"History Report\",\n  \"write_mode\": \"replace\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reports/export/google-sheets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "export",
+                "google-sheets"
               ]
             }
           }

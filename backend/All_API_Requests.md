@@ -23,6 +23,7 @@ Base URL: `http://localhost:5000/api`
 - `GET /equipment`
 - `GET /equipment/:id`
 - `GET /equipment/:id/condition-history` (Admin only)
+- `POST /equipment/media/upload` (Admin only)
 - `POST /equipment`
 - `PUT /equipment/:id/status`
 - `DELETE /equipment/:id`
@@ -58,6 +59,8 @@ Supported `/equipment` query params:
 - `GET /reports/usage` (Admin only)
 - `GET /reports/history` (Admin only)
 - `GET /reports/export` (Admin only)
+- `GET /reports/integrations/status` (Admin only)
+- `POST /reports/export/google-sheets` (Admin only)
 
 ### Roles
 

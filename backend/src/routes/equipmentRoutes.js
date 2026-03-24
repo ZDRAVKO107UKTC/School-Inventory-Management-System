@@ -265,6 +265,42 @@ const validateStatusUpdate = [
         .withMessage(`Status must be one of: ${EQUIPMENT_STATUSES.join(', ')}`)
 ];
 
+const validateMediaUpload = [
+    body('file_name')
+        .trim()
+        .notEmpty()
+        .withMessage('file_name is required')
+        .isLength({ max: 255 })
+        .withMessage('file_name is too long')
+        .customSanitizer((value) => xss(value)),
+    body('content_type')
+        .optional({ nullable: true })
+        .trim()
+        .isLength({ max: 127 })
+        .withMessage('content_type is too long')
+        .customSanitizer((value) => xss(value)),
+    body('data_base64')
+        .optional({ nullable: true })
+        .isString()
+        .withMessage('data_base64 must be a string'),
+    body('remote_url')
+        .optional({ nullable: true })
+        .trim()
+        .custom(optionalUrlValidator),
+    body('folder')
+        .optional({ nullable: true })
+        .trim()
+        .isLength({ max: 255 })
+        .withMessage('folder is too long')
+        .customSanitizer((value) => xss(value)),
+    body().custom(({ data_base64: dataBase64, remote_url: remoteUrl }) => {
+        if (Boolean(dataBase64) === Boolean(remoteUrl)) {
+            throw new Error('Provide exactly one of data_base64 or remote_url');
+        }
+        return true;
+    })
+];
+
 const handleValidation = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -284,6 +320,14 @@ router.post('/',
 );
 
 router.get('/', equipmentController.getEquipment);
+
+router.post('/media/upload',
+    authenticateToken,
+    authorizeRoles('admin'),
+    validateMediaUpload,
+    handleValidation,
+    equipmentController.uploadMedia
+);
 
 router.get('/:id/condition-history', authenticateToken, authorizeRoles('admin'), equipmentController.getConditionHistory);
 router.get('/:id', equipmentController.getEquipmentDetails);

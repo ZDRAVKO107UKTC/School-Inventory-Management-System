@@ -1,4 +1,5 @@
 const equipmentService = require('../services/equipmentService');
+const { uploadMedia: uploadMediaToStorage } = require('../services/storageService');
 const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
 const {
     serializeEquipmentWithPreview,
@@ -263,6 +264,27 @@ const updateEquipment = async (req, res) => {
     }
 };
 
+const uploadMedia = async (req, res) => {
+    try {
+        const upload = await uploadMediaToStorage({
+            fileName: req.body.file_name,
+            contentType: req.body.content_type,
+            dataBase64: req.body.data_base64,
+            remoteUrl: req.body.remote_url,
+            folder: req.body.folder
+        });
+
+        return res.status(201).json({
+            message: 'Media uploaded successfully',
+            upload
+        });
+    } catch (error) {
+        console.error('Error uploading equipment media:', error);
+        const statusCode = /not configured|no supported storage provider/i.test(error.message) ? 503 : 400;
+        return res.status(statusCode).json({ message: error.message || 'Media upload failed' });
+    }
+};
+
 module.exports = {
     getEquipmentDetails,
     getEquipment,
@@ -270,5 +292,6 @@ module.exports = {
     updateStatus,
     deleteEquipment,
     createEquipment,
-    updateEquipment
+    updateEquipment,
+    uploadMedia
 };
