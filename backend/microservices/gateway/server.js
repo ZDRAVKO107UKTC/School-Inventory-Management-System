@@ -6,22 +6,26 @@ const {createProxyMiddleware} = require('http-proxy-middleware');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
 
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: isProduction ? 300 : 5000,
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => !isProduction,
     message: {message: "Too many requests, please try again later."}
 });
 
 const loginLimiter = rateLimit({
+const authLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 15,
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true,
     message: {message: "Too many sign-in attempts. Please wait 10 minutes and try again."}
+    message: {message: "Too many login attempts. Please wait 10 minutes."}
 });
 
 const services = {
@@ -40,6 +44,7 @@ const proxy = (target, forwardedPrefix) => createProxyMiddleware({
     pathRewrite: (path) => {
         return `${forwardedPrefix}${path}`;
     }
+    pathRewrite: {[`^${prefixToRemove}`]: ''}
 });
 
 app.get('/health', (_req, res) => {
@@ -60,6 +65,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/auth/login', loginLimiter, proxy(services.auth, '/api/auth/login'));
+app.post('/api/auth/login', authLimiter, proxy(services.auth, '/api/auth'));
 app.use('/api/auth', generalLimiter, proxy(services.auth, '/api/auth'));
 app.use('/api/users', generalLimiter, proxy(services.user, '/api/users'));
 app.use('/api/admin', generalLimiter, proxy(services.admin, '/api/admin'));

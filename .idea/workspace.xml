@@ -5,6 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="98e050de-4084-4ab4-b303-e143b3da6b6e" name="Changes" comment="" />
+    <list default="true" id="98e050de-4084-4ab4-b303-e143b3da6b6e" name="Changes" comment="Refactor API route handling, improve service client configuration, and add admin login/dashboard routes.">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/microservices/gateway/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/microservices/gateway/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/DashboardPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/DashboardPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/services/requestService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/services/requestService.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -106,6 +112,46 @@
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
     &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\zdrav\\Documents\\GitHub\\School-Inventory-Management-System\\frontend\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "Docker.backend/docker-compose.microservices.yml: Compose Deployment.executor": "Run",
+    "Docker.backend: Compose Deployment.executor": "Run",
+    "HTTP Request.All in security_test.executor": "Run",
+    "HTTP Request.All in test_equipment.executor": "Run",
+    "HTTP Request.All in test_log.executor": "Run",
+    "HTTP Request.security_test | #2.executor": "Run",
+    "HTTP Request.security_test | #3.executor": "Run",
+    "HTTP Request.security_test | 0. Login to get Token.executor": "Run",
+    "HTTP Request.security_test | 1. LOGIN AS ADMIN.executor": "Run",
+    "HTTP Request.security_test | 2. LOGIN AS STUDENT.executor": "Run",
+    "HTTP Request.test_equipment | Test Get Existing Equipment.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Node.js.app.js.executor": "Run",
+    "Node.js.authService.js.executor": "Run",
+    "Node.js.db.js.executor": "Run",
+    "Node.js.protectedRoutes.js.executor": "Run",
+    "Node.js.server.js.executor": "Run",
+    "Node.js.userRoutes.js.executor": "Run",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "fixes",
+    "ignore.virus.scanning.warn.message": "true",
+    "javascript.preferred.runtime.type.id": "node",
+    "junie.onboarding.icon.badge.shown": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "ml.llm.LLMConfigurable",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "C:\\Users\\zdrav\\Documents\\GitHub\\School-Inventory-Management-System\\frontend\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
   },
   &quot;keyToStringList&quot;: {
     &quot;DatabaseDriversLRU&quot;: [

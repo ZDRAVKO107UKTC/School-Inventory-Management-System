@@ -84,6 +84,10 @@ const createEquipment = async (data) => {
 
             await equipment.destroy();
             throw error;
+            const requestIdConstraintIssue = typeof error.message === 'string' && error.message.includes('request_id');
+            if (!requestIdConstraintIssue) {
+                throw error;
+            }
         }
     }
 

@@ -29,7 +29,7 @@ const validateSubmitRequest = [
 
 // --- ROUTES ---
 
-// Submit a new request (Includes the new validation layer)
+// Submit a new request
 router.post('/', authenticateToken, validateSubmitRequest, requestController.submitRequest);
 
 // Get current user's requests

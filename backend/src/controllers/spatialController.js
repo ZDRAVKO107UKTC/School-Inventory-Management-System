@@ -1,4 +1,22 @@
-const { Floor, Room, Equipment } = require('../../models');
+const { Floor, Room, Equipment, sequelize } = require('../../models');
+
+const normalizeOptionalString = (value) => {
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+
+    const normalized = String(value).trim();
+    return normalized === '' ? null : normalized;
+};
+
+const parseOptionalInteger = (value) => {
+    if (value === undefined || value === null || value === '') {
+        return undefined;
+    }
+
+    const parsed = Number(value);
+    return Number.isInteger(parsed) ? parsed : null;
+};
 
 const hasField = (body, field) => Object.prototype.hasOwnProperty.call(body || {}, field);
 const normalizeName = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -39,6 +57,8 @@ const createFloor = async (req, res) => {
     try {
         const name = normalizeName(req.body.name);
         const level = parseInteger(req.body.level);
+        const name = normalizeOptionalString(req.body.name);
+        const level = parseOptionalInteger(req.body.level);
 
         if (!name) {
             return res.status(400).json({ message: 'Floor name is required' });
@@ -46,6 +66,8 @@ const createFloor = async (req, res) => {
 
         if (level === null || isInvalidInteger(level)) {
             return res.status(400).json({ message: 'Floor level must be an integer' });
+        if (level === null || level === undefined || level < 0) {
+            return res.status(400).json({ message: 'Floor level must be a non-negative integer' });
         }
 
         const floor = await Floor.create({ name, level });
@@ -87,6 +109,28 @@ const updateFloor = async (req, res) => {
         }
 
         await floor.update(updates);
+        const name = normalizeOptionalString(req.body.name);
+        const level = parseOptionalInteger(req.body.level);
+
+        if (name === null) {
+            return res.status(400).json({ message: 'Floor name cannot be empty' });
+        }
+
+        if (level === null) {
+            return res.status(400).json({ message: 'Floor level must be a non-negative integer' });
+        }
+
+        if (name === undefined && level === undefined) {
+            return res.status(400).json({ message: 'At least one floor field must be provided' });
+        }
+
+        const floor = await Floor.findByPk(id);
+        if (!floor) return res.status(404).json({ message: 'Floor not found' });
+
+        await floor.update({
+            ...(name !== undefined ? { name } : {}),
+            ...(level !== undefined ? { level } : {})
+        });
         return res.status(200).json({ floor });
     } catch (error) {
         console.error('Error updating floor:', error);
@@ -103,6 +147,29 @@ const deleteFloor = async (req, res) => {
         }
 
         await floor.destroy();
+        const floor = await Floor.findByPk(id, {
+            include: [{ model: Room, as: 'rooms', attributes: ['id'] }]
+        });
+        if (!floor) return res.status(404).json({ message: 'Floor not found' });
+
+        await sequelize.transaction(async (transaction) => {
+            const roomIds = floor.rooms.map((room) => room.id);
+
+            if (roomIds.length > 0) {
+                await Equipment.update({ room_id: null }, {
+                    where: { room_id: roomIds },
+                    transaction
+                });
+
+                await Room.destroy({
+                    where: { floor_id: floor.id },
+                    transaction
+                });
+            }
+
+            await floor.destroy({ transaction });
+        });
+
         return res.status(200).json({ message: 'Floor deleted successfully' });
     } catch (error) {
         console.error('Error deleting floor:', error);
@@ -122,6 +189,16 @@ const createRoom = async (req, res) => {
 
         if (floorId === null || isInvalidInteger(floorId) || floorId < 1) {
             return res.status(400).json({ message: 'floor_id must be a positive integer' });
+        const floor_id = parseOptionalInteger(req.body.floor_id);
+        const name = normalizeOptionalString(req.body.name);
+        const path_data = normalizeOptionalString(req.body.path_data);
+        const x = parseOptionalInteger(req.body.x);
+        const y = parseOptionalInteger(req.body.y);
+        const width = parseOptionalInteger(req.body.width);
+        const height = parseOptionalInteger(req.body.height);
+
+        if (floor_id === null || floor_id === undefined) {
+            return res.status(400).json({ message: 'A valid floor_id is required' });
         }
 
         if (!name) {
@@ -145,6 +222,11 @@ const createRoom = async (req, res) => {
         }
 
         const floor = await Floor.findByPk(floorId);
+        if ([x, y, width, height].some((value) => value === null)) {
+            return res.status(400).json({ message: 'Room coordinates and dimensions must be integers' });
+        }
+
+        const floor = await Floor.findByPk(floor_id);
         if (!floor) {
             return res.status(404).json({ message: 'Floor not found' });
         }
@@ -158,6 +240,7 @@ const createRoom = async (req, res) => {
             width,
             height
         });
+        const room = await Room.create({ floor_id, name, path_data, x, y, width, height });
         return res.status(201).json({ room });
     } catch (error) {
         console.error('Error creating room:', error);
@@ -231,6 +314,36 @@ const updateRoom = async (req, res) => {
         }
 
         await room.update(updates);
+        const name = normalizeOptionalString(req.body.name);
+        const path_data = normalizeOptionalString(req.body.path_data);
+        const x = parseOptionalInteger(req.body.x);
+        const y = parseOptionalInteger(req.body.y);
+        const width = parseOptionalInteger(req.body.width);
+        const height = parseOptionalInteger(req.body.height);
+
+        if (name === null) {
+            return res.status(400).json({ message: 'Room name cannot be empty' });
+        }
+
+        if ([x, y, width, height].some((value) => value === null)) {
+            return res.status(400).json({ message: 'Room coordinates and dimensions must be integers' });
+        }
+
+        if (name === undefined && path_data === undefined && x === undefined && y === undefined && width === undefined && height === undefined) {
+            return res.status(400).json({ message: 'At least one room field must be provided' });
+        }
+
+        const room = await Room.findByPk(id);
+        if (!room) return res.status(404).json({ message: 'Room not found' });
+
+        await room.update({
+            ...(name !== undefined ? { name } : {}),
+            ...(path_data !== undefined ? { path_data } : {}),
+            ...(x !== undefined ? { x } : {}),
+            ...(y !== undefined ? { y } : {}),
+            ...(width !== undefined ? { width } : {}),
+            ...(height !== undefined ? { height } : {})
+        });
         return res.status(200).json({ room });
     } catch (error) {
         console.error('Error updating room:', error);
@@ -247,6 +360,17 @@ const deleteRoom = async (req, res) => {
         }
 
         await room.destroy();
+        if (!room) return res.status(404).json({ message: 'Room not found' });
+
+        await sequelize.transaction(async (transaction) => {
+            await Equipment.update({ room_id: null }, {
+                where: { room_id: room.id },
+                transaction
+            });
+
+            await room.destroy({ transaction });
+        });
+
         return res.status(200).json({ message: 'Room deleted successfully' });
     } catch (error) {
         console.error('Error deleting room:', error);
@@ -281,6 +405,26 @@ const assignEquipmentToRoom = async (req, res) => {
         }
 
         await equipment.update({ room_id: roomId });
+        const equipment_id = parseOptionalInteger(req.body.equipment_id);
+        const room_id = req.body.room_id === null ? null : parseOptionalInteger(req.body.room_id);
+
+        if (equipment_id === null || equipment_id === undefined) {
+            return res.status(400).json({ message: 'A valid equipment_id is required' });
+        }
+
+        if (room_id === null && req.body.room_id !== null && req.body.room_id !== undefined) {
+            return res.status(400).json({ message: 'room_id must be an integer or null' });
+        }
+
+        const equipment = await Equipment.findByPk(equipment_id);
+        if (!equipment) return res.status(404).json({ message: 'Equipment not found' });
+
+        if (room_id !== null && room_id !== undefined) {
+            const room = await Room.findByPk(room_id);
+            if (!room) return res.status(404).json({ message: 'Room not found' });
+        }
+
+        await equipment.update({ room_id });
         return res.status(200).json({ equipment });
     } catch (error) {
         console.error('Error assigning equipment to room:', error);
