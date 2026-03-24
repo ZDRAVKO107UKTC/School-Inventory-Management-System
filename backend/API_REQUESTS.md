@@ -56,6 +56,14 @@ Body:
 
 `GET /equipment?search=laptop&status=available&condition=new`
 
+Equipment responses now also include:
+
+- `photo_preview_url`: preview-friendly URL derived from the stored `photo_url`
+- `photo_thumbnail_url`: thumbnail URL when one can be generated
+- `photo_preview_mode`: `image`, `iframe`, or `external`
+- `photo_preview_provider`: detected provider such as `cloudinary` or `google-drive`
+- `qr_code_value`: QR-ready equipment payload string for labels and scans
+
 ## Create Borrow Request
 
 `POST /requests`

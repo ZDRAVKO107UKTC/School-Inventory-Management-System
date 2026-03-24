@@ -17,12 +17,14 @@ const generalLimiter = rateLimit({
     message: {message: "Too many requests, please try again later."}
 });
 
+const loginLimiter = rateLimit({
 const authLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 15,
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true,
+    message: {message: "Too many sign-in attempts. Please wait 10 minutes and try again."}
     message: {message: "Too many login attempts. Please wait 10 minutes."}
 });
 
@@ -36,9 +38,12 @@ const services = {
     spatial: process.env.SPATIAL_SERVICE_URL || `http://127.0.0.1:${process.env.SPATIAL_SERVICE_PORT || 5007}`
 };
 
-const proxy = (target, prefixToRemove) => createProxyMiddleware({
+const proxy = (target, forwardedPrefix) => createProxyMiddleware({
     target,
     changeOrigin: true,
+    pathRewrite: (path) => {
+        return `${forwardedPrefix}${path}`;
+    }
     pathRewrite: {[`^${prefixToRemove}`]: ''}
 });
 
@@ -59,6 +64,7 @@ app.get('/health', (_req, res) => {
     });
 });
 
+app.use('/api/auth/login', loginLimiter, proxy(services.auth, '/api/auth/login'));
 app.post('/api/auth/login', authLimiter, proxy(services.auth, '/api/auth'));
 app.use('/api/auth', generalLimiter, proxy(services.auth, '/api/auth'));
 app.use('/api/users', generalLimiter, proxy(services.user, '/api/users'));

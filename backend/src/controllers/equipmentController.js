@@ -1,5 +1,56 @@
 const equipmentService = require('../services/equipmentService');
 const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
+const {
+    serializeEquipmentWithPreview,
+    serializeEquipmentCollectionWithPreview
+} = require('../utils/equipmentMedia');
+
+const normalizeEquipmentPayload = (payload) => {
+    const normalized = { ...payload };
+
+    for (const field of ['name', 'type', 'condition', 'status']) {
+        if (typeof normalized[field] === 'string') {
+            normalized[field] = normalized[field].trim();
+        }
+    }
+
+    for (const field of ['serial_number', 'location', 'photo_url']) {
+        if (typeof normalized[field] === 'string') {
+            normalized[field] = normalized[field].trim();
+            if (normalized[field] === '') {
+                normalized[field] = null;
+            }
+        }
+    }
+
+    if (normalized.room_id === '' || normalized.room_id === undefined) {
+        delete normalized.room_id;
+    }
+
+    return normalized;
+};
+
+const handleEquipmentPersistenceError = (res, error) => {
+    if (error.name === 'SequelizeValidationError') {
+        return res.status(400).json({
+            message: error.errors?.[0]?.message || 'Invalid equipment payload'
+        });
+    }
+
+    if (error.name === 'SequelizeUniqueConstraintError') {
+        return res.status(409).json({
+            message: 'Equipment with this serial number already exists'
+        });
+    }
+
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+        return res.status(400).json({
+            message: 'Selected room does not exist'
+        });
+    }
+
+    return null;
+};
 
 const normalizeOptionalString = (value) => {
     if (value === undefined || value === null) {
@@ -39,7 +90,7 @@ const getEquipmentDetails = async (req, res) => {
         const {id} = req.params;
         const equipment = await equipmentService.getEquipmentById(id);
         if (!equipment) return res.status(404).json({ message: `Equipment with ID ${id} not found` });
-        return res.status(200).json(equipment);
+        return res.status(200).json(serializeEquipmentWithPreview(equipment));
     } catch (error) {
         return res.status(500).json({message: "Internal Server Error"});
     }
@@ -52,12 +103,12 @@ const getEquipment = async (req, res) => {
         const result = await equipmentService.getAllEquipment(filters, pagination);
 
         if (!pagination) {
-            return res.status(200).json(result);
+            return res.status(200).json(serializeEquipmentCollectionWithPreview(result));
         }
 
         const paginationMeta = buildPaginationMeta(result.count, pagination);
         applyPaginationHeaders(res, paginationMeta);
-        return res.status(200).json(result.rows);
+        return res.status(200).json(serializeEquipmentCollectionWithPreview(result.rows));
     } catch (error) {
         res.status(500).json({error: "Failed to fetch equipment"});
     }
@@ -171,20 +222,25 @@ const createEquipment = async (req, res) => {
 
         return res.status(201).json({
             message: "Equipment created successfully",
-            equipment
+            equipment: serializeEquipmentWithPreview(equipment)
         });
     } catch (error) {
         if (isPersistenceError(error)) {
             return res.status(400).json({ message: error.errors?.[0]?.message || error.message });
         }
         console.error("Error creating equipment:", error);
-        return res.status(500).json({message: "Internal Server Error"});
+        return handleEquipmentPersistenceError(res, error)
+            || res.status(500).json({message: "Internal Server Error"});
     }
 };
 
 const updateEquipment = async (req, res) => {
     try {
         const { id } = req.params;
+        const data = normalizeEquipmentPayload(req.body);
+        // Basic validation
+        if (data.quantity !== undefined && data.quantity < 0) {
+            return res.status(400).json({ message: "Quantity must be a non-negative number" });
         const data = normalizeEquipmentPayload(req.body, { isPartial: true });
 
         if (data.quantity !== undefined && (!Number.isInteger(data.quantity) || data.quantity < 0)) {
@@ -193,13 +249,17 @@ const updateEquipment = async (req, res) => {
 
         const updatedEquipment = await equipmentService.updateEquipment(id, data);
         if (!updatedEquipment) return res.status(404).json({ message: "Equipment not found" });
-        return res.status(200).json({ message: "Equipment updated successfully", equipment: updatedEquipment });
+        return res.status(200).json({
+            message: "Equipment updated successfully",
+            equipment: serializeEquipmentWithPreview(updatedEquipment)
+        });
     } catch (error) {
         if (isPersistenceError(error)) {
             return res.status(400).json({ message: error.errors?.[0]?.message || error.message });
         }
         console.error("Error updating equipment:", error);
-        return res.status(500).json({ message: "Internal Server Error" });
+        return handleEquipmentPersistenceError(res, error)
+            || res.status(500).json({ message: "Internal Server Error" });
     }
 };
 

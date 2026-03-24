@@ -16,6 +16,7 @@ const register = async (req, res, next) => {
     try {
         const userData = {
             ...req.body,
+            username: typeof req.body.username === 'string' ? xss(req.body.username) : req.body.username
             username: xss(req.body.username || '')
         };
 
@@ -39,7 +40,6 @@ const login = async (req, res, next) => {
     try {
         const data = await loginUser(req.body);
 
-        // Set refresh token as httpOnly cookie for security
         res.cookie('refreshToken', data.refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',

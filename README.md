@@ -49,6 +49,20 @@ This command does everything automatically:
 
 Frontend will call `http://127.0.0.1:5000/api/*` through proxy.
 
+### Backend Only
+
+From `backend/`:
+```bash
+npm run microservices:start
+```
+
+If the backend is already running, this command now reports that instead of crashing on port conflicts.
+
+To stop all backend microservices on ports `5000` through `5007`:
+```bash
+npm run microservices:stop
+```
+
 ## Seeded Login Accounts
 
 All seeded users use password: `Password123`

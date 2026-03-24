@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
 
 const VALID_ROLES = ['student', 'teacher', 'admin'];
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 const normalizeOptionalString = (value) => {
     if (value === undefined || value === null) {
@@ -47,6 +48,12 @@ const listUsers = async (req, res) => {
 
 const createUser = async (req, res) => {
     try {
+        const { username, email, password, role } = req.body;
+        const normalizedUsername = typeof username === 'string' ? username.trim() : '';
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+        const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : '';
+
+        if (!normalizedUsername || !normalizedEmail || !password || !normalizedRole) {
         const username = normalizeOptionalString(req.body.username);
         const email = normalizeOptionalString(req.body.email)?.toLowerCase();
         const password = req.body.password;
@@ -58,6 +65,15 @@ const createUser = async (req, res) => {
             });
         }
 
+        if (!VALID_ROLES.includes(normalizedRole)) {
+            return res.status(400).json({
+                message: `Invalid role. Allowed values: ${VALID_ROLES.join(', ')}`
+            });
+        }
+
+        if (!isValidEmail(normalizedEmail)) {
+            return res.status(400).json({
+                message: 'A valid email address is required'
         if (!isValidEmail(email)) {
             return res.status(400).json({
                 message: "A valid email address is required"
@@ -79,6 +95,8 @@ const createUser = async (req, res) => {
         const existingUser = await User.findOne({
             where: {
                 [Op.or]: [
+                    { email: normalizedEmail },
+                    { username: normalizedUsername }
                     { email },
                     { username }
                 ]
@@ -97,7 +115,7 @@ const createUser = async (req, res) => {
             username,
             email,
             password_hash: hashedPassword,
-            role
+            role: normalizedRole
         });
 
         const { password_hash: _, ...userWithoutPassword } = newUser.toJSON();
@@ -118,6 +136,8 @@ const createUser = async (req, res) => {
 const updateUserRole = async (req, res) => {
     try {
         const { id } = req.params;
+        const normalizedRole = typeof req.body.role === 'string' ? req.body.role.trim().toLowerCase() : '';
+        if (!normalizedRole || !VALID_ROLES.includes(normalizedRole)) {
         const role = normalizeOptionalString(req.body.role)?.toLowerCase();
 
         if (!role || !VALID_ROLES.includes(role)) {
@@ -129,10 +149,9 @@ const updateUserRole = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
         const oldRole = user.role;
-        user.role = role;
+        user.role = normalizedRole;
         await user.save();
-        // Audit log
-        console.log(`[AUDIT] Admin ${req.user.userId} changed role of user ${user.id} from ${oldRole} to ${role} at ${new Date().toISOString()}`);
+        console.log(`[AUDIT] Admin ${req.user.userId} changed role of user ${user.id} from ${oldRole} to ${normalizedRole} at ${new Date().toISOString()}`);
         return res.status(200).json({
             message: 'User role updated successfully',
             user: {
@@ -186,6 +205,24 @@ const deleteUser = async (req, res) => {
 const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
+        const { username, email, role } = req.body;
+        const normalizedUsername = typeof username === 'string' ? username.trim() : undefined;
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : undefined;
+        const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : undefined;
+
+        if (normalizedUsername === undefined && normalizedEmail === undefined && normalizedRole === undefined) {
+            return res.status(400).json({ message: 'At least one of username, email, or role is required' });
+        }
+
+        if (normalizedUsername !== undefined && !normalizedUsername) {
+            return res.status(400).json({ message: 'Username cannot be empty' });
+        }
+
+        if (normalizedEmail !== undefined && (!normalizedEmail || !isValidEmail(normalizedEmail))) {
+            return res.status(400).json({ message: 'A valid email address is required' });
+        }
+
+        if (normalizedRole !== undefined && !VALID_ROLES.includes(normalizedRole)) {
         const username = normalizeOptionalString(req.body.username);
         const email = normalizeOptionalString(req.body.email)?.toLowerCase();
         const role = normalizeOptionalString(req.body.role)?.toLowerCase();
@@ -215,11 +252,14 @@ const updateUser = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        if (normalizedUsername !== undefined || normalizedEmail !== undefined) {
         if (username || email) {
             const conflictWhere = {
                 [Op.or]: [],
                 id: { [Op.ne]: id }
             };
+            if (normalizedUsername !== undefined) conflictWhere[Op.or].push({ username: normalizedUsername });
+            if (normalizedEmail !== undefined) conflictWhere[Op.or].push({ email: normalizedEmail });
             if (username) conflictWhere[Op.or].push({ username });
             if (email) conflictWhere[Op.or].push({ email });
 
@@ -231,6 +271,9 @@ const updateUser = async (req, res) => {
             }
         }
 
+        if (normalizedUsername !== undefined) user.username = normalizedUsername;
+        if (normalizedEmail !== undefined) user.email = normalizedEmail;
+        if (normalizedRole !== undefined) user.role = normalizedRole;
         if (username) user.username = username;
         if (email) user.email = email;
         if (role) user.role = role;

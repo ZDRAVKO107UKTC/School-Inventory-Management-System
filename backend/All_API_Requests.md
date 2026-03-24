@@ -27,6 +27,14 @@ Base URL: `http://localhost:5000/api`
 - `PUT /equipment/:id/status`
 - `DELETE /equipment/:id`
 
+Equipment payloads may also include derived media preview fields:
+
+- `photo_preview_url`
+- `photo_thumbnail_url`
+- `photo_preview_mode`
+- `photo_preview_provider`
+- `qr_code_value`
+
 Supported `/equipment` query params:
 
 - `search`

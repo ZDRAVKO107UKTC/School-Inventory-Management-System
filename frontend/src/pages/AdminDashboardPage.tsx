@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Shield, LogOut, UserPlus, UserCog, UserX, Boxes, Trash2, CheckCircle2,
   XCircle, LayoutDashboard, ChevronDown, Package, Clock, ArchiveX,
-  RotateCcw, Download, Plus, AlertCircle, Tag, MapPin, Camera, Edit, History,
+  RotateCcw, Download, Plus, AlertCircle, Tag, MapPin, Edit, History,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ThemeToggle } from '@/components/auth/ThemeToggle';
@@ -504,13 +504,6 @@ const AdminDashboardPage: React.FC = () => {
                       <article key={item.id} className="relative rounded-2xl border border-slate-200/80 dark:border-slate-700 bg-gradient-to-r from-white to-slate-50 dark:from-slate-900/80 dark:to-slate-800/60 p-3 overflow-visible">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                           <div className="flex gap-3 items-start">
-                            {item.photo_url ? (
-                              <img src={item.photo_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover shrink-0 border border-slate-200 dark:border-slate-600" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                            ) : (
-                              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                                <Camera className="w-4 h-4 text-slate-400" />
-                              </div>
-                            )}
                             <div>
                               <p className="font-semibold text-slate-900 dark:text-slate-100">{item.name}</p>
                               <p className="text-sm text-slate-600 dark:text-slate-400">{item.type} • Qty {item.quantity}</p>
