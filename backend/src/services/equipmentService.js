@@ -61,14 +61,20 @@ const getAllEquipment = async (filters, pagination = null) => {
 const createEquipment = async (data) => {
     const equipment = await Equipment.create(data);
 
-    // Log initial condition
     if (equipment.condition) {
-        await ReturnConditionLog.create({
-            equipment_id: equipment.id,
-            condition: equipment.condition,
-            notes: 'Initial registration',
-            recorded_at: new Date()
-        });
+        try {
+            await ReturnConditionLog.create({
+                equipment_id: equipment.id,
+                condition: equipment.condition,
+                notes: 'Initial registration',
+                recorded_at: new Date()
+            });
+        } catch (error) {
+            const requestIdConstraintIssue = typeof error.message === 'string' && error.message.includes('request_id');
+            if (!requestIdConstraintIssue) {
+                throw error;
+            }
+        }
     }
 
     return equipment;

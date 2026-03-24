@@ -6,14 +6,15 @@ const {createProxyMiddleware} = require('http-proxy-middleware');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
-
+const isProduction = process.env.NODE_ENV === 'production';
 // Removed app.use(express.json()) to prevent body consumption before proxy forwarding
 
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: isProduction ? 300 : 5000,
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => !isProduction,
     message: {message: "Too many requests, please try again later."}
 });
 
@@ -22,7 +23,8 @@ const authLimiter = rateLimit({
     max: 9999, // Removed strict limit for local dev
     standardHeaders: true,
     legacyHeaders: false,
-    message: {message: "Too many login attempts. Please wait 15 minutes."}
+    skipSuccessfulRequests: true,
+    message: {message: "Too many login attempts. Please wait 10 minutes."}
 });
 
 const services = {
@@ -58,7 +60,8 @@ app.get('/health', (_req, res) => {
     });
 });
 
-app.use('/api/auth', authLimiter, proxy(services.auth, '/api/auth'));
+app.post('/api/auth/login', authLimiter, proxy(services.auth, '/api/auth'));
+app.use('/api/auth', generalLimiter, proxy(services.auth, '/api/auth'));
 app.use('/api/users', generalLimiter, proxy(services.user, '/api/users'));
 app.use('/api/admin', generalLimiter, proxy(services.admin, '/api/admin'));
 app.use('/api/equipment', generalLimiter, proxy(services.equipment, '/api/equipment'));

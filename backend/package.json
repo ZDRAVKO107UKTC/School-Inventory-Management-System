@@ -20,7 +20,9 @@
     "svc:request": "node microservices/services/request-service/server.js",
     "svc:report": "node microservices/services/report-service/server.js",
     "svc:spatial": "node microservices/services/spatial-service/server.js",
-    "microservices:start": "concurrently -k -n auth,user,admin,equipment,request,report,spatial,gateway -c yellow,cyan,magenta,green,blue,red,white,gray \"node microservices/services/auth-service/server.js\" \"node microservices/services/user-service/server.js\" \"node microservices/services/admin-service/server.js\" \"node microservices/services/equipment-service/server.js\" \"node microservices/services/request-service/server.js\" \"node microservices/services/report-service/server.js\" \"node microservices/services/spatial-service/server.js\" \"node microservices/gateway/server.js\""
+    "microservices:start": "node scripts/start-microservices.js",
+    "microservices:start:raw": "concurrently -k -n auth,user,admin,equipment,request,report,spatial,gateway -c yellow,cyan,magenta,green,blue,red,white,gray \"node microservices/services/auth-service/server.js\" \"node microservices/services/user-service/server.js\" \"node microservices/services/admin-service/server.js\" \"node microservices/services/equipment-service/server.js\" \"node microservices/services/request-service/server.js\" \"node microservices/services/report-service/server.js\" \"node microservices/services/spatial-service/server.js\" \"node microservices/gateway/server.js\"",
+    "microservices:stop": "node scripts/stop-microservices.js"
   },
   "keywords": [],
   "author": "",

@@ -9,4 +9,3 @@ const app = createServiceApp({
 });
 
 module.exports = app;
-

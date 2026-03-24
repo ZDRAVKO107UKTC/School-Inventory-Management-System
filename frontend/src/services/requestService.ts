@@ -3,6 +3,7 @@ import type { ApiResult, BorrowRequest } from '@/types/auth';
 
 export interface SubmitRequestPayload {
   equipment_id: number;
+  quantity?: number;
   request_date: string;
   due_date: string;
   notes?: string;

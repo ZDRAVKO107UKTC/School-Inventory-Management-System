@@ -5,7 +5,9 @@ const app = require('./app');
 
 const PORT = process.env.SPATIAL_SERVICE_PORT || 5007;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`spatial-service running on port ${PORT}`);
 });
+
+server.ref();
 

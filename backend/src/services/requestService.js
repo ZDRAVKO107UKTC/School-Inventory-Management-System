@@ -54,40 +54,63 @@ const fireAndForgetNotification = (label, task) => {
  * Creates a new borrow request with full validation
  */
 const createBorrowRequest = async (requestData) => {
-    const equipment = await Equipment.findByPk(requestData.equipment_id);
+    const createdRequest = await sequelize.transaction(async (transaction) => {
+        const equipment = await Equipment.findByPk(requestData.equipment_id, {
+            transaction,
+            lock: transaction.LOCK.UPDATE
+        });
 
-    if (!equipment) {
-        const error = new Error('Equipment not found');
-        error.statusCode = 404;
-        throw error;
-    }
+        if (!equipment) {
+            const error = new Error('Equipment not found');
+            error.statusCode = 404;
+            throw error;
+        }
 
-    if (equipment.status !== 'available') {
-        const error = new Error("Equipment is not available for borrowing");
-        error.statusCode = 400;
-        throw error;
-    }
+        if (equipment.status !== 'available') {
+            const error = new Error("Equipment is not available for borrowing");
+            error.statusCode = 400;
+            throw error;
+        }
 
-    if (!Number.isInteger(requestData.quantity) || requestData.quantity < 1) {
-        const error = new Error("Quantity must be a positive integer");
-        error.statusCode = 400;
-        throw error;
-    }
+        if (!Number.isInteger(requestData.quantity) || requestData.quantity < 1) {
+            const error = new Error("Quantity must be a positive integer");
+            error.statusCode = 400;
+            throw error;
+        }
 
-    if (requestData.quantity > equipment.quantity) {
-        const error = new Error("Requested quantity exceeds available inventory");
-        error.statusCode = 400;
-        throw error;
-    }
+        if (requestData.quantity > equipment.quantity) {
+            const error = new Error("Requested quantity exceeds available inventory");
+            error.statusCode = 400;
+            throw error;
+        }
 
-    const createdRequest = await Request.create({
-        user_id: requestData.user_id,
-        equipment_id: requestData.equipment_id,
-        quantity: requestData.quantity,
-        request_date: requestData.request_date,
-        due_date: requestData.due_date,
-        notes: requestData.notes,
-        status: 'pending'
+        const existingActiveRequest = await Request.findOne({
+            where: {
+                user_id: requestData.user_id,
+                equipment_id: requestData.equipment_id,
+                status: {
+                    [Op.in]: ['pending', 'approved']
+                }
+            },
+            transaction,
+            lock: transaction.LOCK.UPDATE
+        });
+
+        if (existingActiveRequest) {
+            const error = new Error('You already have an active request for this equipment');
+            error.statusCode = 409;
+            throw error;
+        }
+
+        return Request.create({
+            user_id: requestData.user_id,
+            equipment_id: requestData.equipment_id,
+            quantity: requestData.quantity,
+            request_date: requestData.request_date,
+            due_date: requestData.due_date,
+            notes: requestData.notes,
+            status: 'pending'
+        }, { transaction });
     });
 
     const requestWithRelations = await loadRequestNotificationContext(createdRequest.id);
