@@ -8,6 +8,16 @@ const isEmailEnabled = () => process.env.EMAIL_ENABLED !== 'false';
 
 const getFromAddress = () => process.env.EMAIL_FROM || 'no-reply@school-inventory.local';
 
+const getEmailProvider = () => (isEmailEnabled() ? 'nodemailer' : 'json');
+
+const isEmailConfigured = () => {
+  if (!isEmailEnabled()) {
+    return true;
+  }
+
+  return Boolean(process.env.SMTP_HOST);
+};
+
 const createTransporter = () => {
   if (!isEmailEnabled()) {
     return nodemailer.createTransport({ jsonTransport: true });
@@ -56,6 +66,8 @@ const sendEmail = async ({ to, subject, text, html }) => {
 
 module.exports = {
   isEmailEnabled,
+  isEmailConfigured,
   getFromAddress,
+  getEmailProvider,
   sendEmail
 };

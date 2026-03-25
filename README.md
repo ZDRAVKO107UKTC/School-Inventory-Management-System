@@ -114,9 +114,24 @@ Email and reminder settings:
 - `LOW_STOCK_THRESHOLD=2`
 - `REMINDER_JOB_INTERVAL_MS=21600000`
 
+Storage provider settings:
+- `STORAGE_DEFAULT_FOLDER=equipment-media`
+- `STORAGE_MAX_UPLOAD_BYTES=10485760`
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+
+Google Sheets settings:
+- `GOOGLE_SHEETS_DEFAULT_SPREADSHEET_ID`
+- `GOOGLE_SHEETS_DEFAULT_SHEET_NAME`
+- `GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON` or shared `GOOGLE_SERVICE_ACCOUNT_JSON`
+
 Admin reminder endpoints:
 - `GET /api/reports/notifications/summary`
 - `POST /api/reports/notifications/run`
+
+Admin integration endpoints:
+- `GET /api/reports/integrations/status`
+- `POST /api/equipment/media/upload`
+- `POST /api/reports/export/google-sheets`
 
 ## Runtime Mode
 

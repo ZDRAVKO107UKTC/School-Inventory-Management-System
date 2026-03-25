@@ -77,6 +77,31 @@ Returns a new access token for the same session.
 
 Deletes the refresh token from the database and clears the cookie.
 
+### `POST /auth/forgot-password`
+
+Accepts:
+
+```json
+{
+  "email": "john@example.com"
+}
+```
+
+Always returns a generic success message. If the email belongs to a user, the backend stores a short-lived reset token and emails a link to the frontend reset page.
+
+### `POST /auth/reset-password`
+
+Accepts:
+
+```json
+{
+  "token": "raw-reset-token-from-email",
+  "password": "newSecurePassword123"
+}
+```
+
+Resets the password, clears the reset token, and revokes all refresh tokens for that user.
+
 ## Token Behavior
 
 - Access token expiry is controlled by `JWT_ACCESS_EXPIRES_IN` and defaults to `15m`
@@ -89,6 +114,9 @@ Deletes the refresh token from the database and clears the cookie.
 ```env
 JWT_SECRET=your_secret_key
 JWT_ACCESS_EXPIRES_IN=15m
+FRONTEND_URL=http://localhost:5173
+PASSWORD_RESET_URL=http://localhost:5173/reset-password
+PASSWORD_RESET_TOKEN_EXPIRES_MINUTES=60
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_NAME=school_inventory

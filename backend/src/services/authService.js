@@ -2,11 +2,20 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const db = require("../../models");
+const { sendEmail } = require("./emailService");
 const { User, RefreshToken } = db;
+const { Op } = db.Sequelize;
 
 const SALT_ROUNDS = 10;
 const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const GOOGLE_TOKEN_INFO_ENDPOINT = "https://oauth2.googleapis.com/tokeninfo";
+
+const PASSWORD_RESET_TOKEN_BYTES = 32;
+const parsedPasswordResetExpiryMinutes = Number(process.env.PASSWORD_RESET_TOKEN_EXPIRES_MINUTES || 60);
+const PASSWORD_RESET_TOKEN_EXPIRES_MINUTES = Number.isFinite(parsedPasswordResetExpiryMinutes) && parsedPasswordResetExpiryMinutes > 0
+    ? parsedPasswordResetExpiryMinutes
+    : 60;
+const PASSWORD_RESET_RESPONSE_MESSAGE = "If an account with that email exists, a password reset link has been sent.";
 
 const isValidEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -30,6 +39,68 @@ const generateAccessToken = (user) => {
 
 const generateRefreshToken = () => {
     return crypto.randomBytes(64).toString('hex');
+};
+
+const generatePasswordResetToken = () => {
+    return crypto.randomBytes(PASSWORD_RESET_TOKEN_BYTES).toString('hex');
+};
+
+const hashPasswordResetToken = (token) => {
+    return crypto.createHash('sha256').update(token).digest('hex');
+};
+
+const getPasswordResetExpiryDate = () => {
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + PASSWORD_RESET_TOKEN_EXPIRES_MINUTES);
+    return expiresAt;
+};
+
+const getPasswordResetBaseUrl = () => {
+    if (process.env.PASSWORD_RESET_URL) {
+        return process.env.PASSWORD_RESET_URL.trim();
+    }
+
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '');
+    return `${frontendUrl}/reset-password`;
+};
+
+const buildPasswordResetUrl = (token) => {
+    let url;
+
+    try {
+        url = new URL(getPasswordResetBaseUrl());
+    } catch (_error) {
+        const error = new Error("Password reset URL configuration is invalid");
+        error.statusCode = 500;
+        throw error;
+    }
+
+    url.searchParams.set('token', token);
+    return url.toString();
+};
+
+const buildPasswordResetEmail = ({ username, resetUrl }) => {
+    const greetingName = username || 'there';
+
+    return {
+        subject: 'Reset your School Inventory password',
+        text: [
+            `Hello ${greetingName},`,
+            '',
+            'We received a request to reset your password.',
+            `Open this link to choose a new password: ${resetUrl}`,
+            '',
+            `This link expires in ${PASSWORD_RESET_TOKEN_EXPIRES_MINUTES} minutes.`,
+            'If you did not request this, you can ignore this email.'
+        ].join('\n'),
+        html: `
+            <p>Hello ${greetingName},</p>
+            <p>We received a request to reset your password.</p>
+            <p><a href="${resetUrl}">Open the password reset page</a></p>
+            <p>This link expires in ${PASSWORD_RESET_TOKEN_EXPIRES_MINUTES} minutes.</p>
+            <p>If you did not request this, you can ignore this email.</p>
+        `
+    };
 };
 
 const getGoogleOAuthConfig = () => {
@@ -260,6 +331,7 @@ const findOrCreateTelegramUser = async (authData) => {
     });
 };
 
+
 const registerUser = async ({ username, email, password, role }) => {
     if (!username || !email || !password) {
         const error = new Error("Username, email and password are required");
@@ -476,6 +548,132 @@ const logoutUser = async (refreshToken) => {
     };
 };
 
+const requestPasswordReset = async ({ email }) => {
+    if (!email) {
+        const error = new Error("Email is required");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!isValidEmail(normalizedEmail)) {
+        const error = new Error("Invalid email format");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const user = await User.findOne({
+        where: db.Sequelize.where(
+            db.Sequelize.fn('LOWER', db.Sequelize.col('email')),
+            normalizedEmail
+        ),
+        attributes: ['id', 'username', 'email']
+    });
+
+    if (!user) {
+        return {
+            message: PASSWORD_RESET_RESPONSE_MESSAGE
+        };
+    }
+
+    const rawResetToken = generatePasswordResetToken();
+    const hashedResetToken = hashPasswordResetToken(rawResetToken);
+    const resetExpiresAt = getPasswordResetExpiryDate();
+    const resetUrl = buildPasswordResetUrl(rawResetToken);
+
+    await user.update({
+        password_reset_token_hash: hashedResetToken,
+        password_reset_expires_at: resetExpiresAt
+    });
+
+    const emailPayload = buildPasswordResetEmail({
+        username: user.username,
+        resetUrl
+    });
+
+    try {
+        await sendEmail({
+            to: user.email,
+            ...emailPayload
+        });
+    } catch (_error) {
+        await user.update({
+            password_reset_token_hash: null,
+            password_reset_expires_at: null
+        });
+
+        const error = new Error("Unable to send password reset email");
+        error.statusCode = 500;
+        throw error;
+    }
+
+    return {
+        message: PASSWORD_RESET_RESPONSE_MESSAGE
+    };
+};
+
+const resetPassword = async ({ token, password }) => {
+    if (!token || !password) {
+        const error = new Error("Reset token and password are required");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const trimmedToken = token.trim();
+
+    if (!trimmedToken) {
+        const error = new Error("Reset token is required");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (password.length < 8) {
+        const error = new Error("Password must be at least 8 characters long");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const hashedResetToken = hashPasswordResetToken(trimmedToken);
+
+    const user = await User.findOne({
+        where: {
+            password_reset_token_hash: hashedResetToken,
+            password_reset_expires_at: {
+                [Op.gt]: new Date()
+            }
+        },
+        attributes: ['id', 'password_hash', 'password_reset_token_hash', 'password_reset_expires_at']
+    });
+
+    if (!user) {
+        const error = new Error("Invalid or expired password reset token");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+    await db.sequelize.transaction(async (transaction) => {
+        await user.update({
+            password_hash: hashedPassword,
+            password_reset_token_hash: null,
+            password_reset_expires_at: null
+        }, { transaction });
+
+        await RefreshToken.destroy({
+            where: {
+                user_id: user.id
+            },
+            transaction
+        });
+    });
+
+    return {
+        message: "Password reset successful"
+    };
+};
+
 const loginWithGoogleCode = async (code) => {
     if (!code) {
         const error = new Error('Google authorization code is required');
@@ -536,6 +734,7 @@ const loginWithTelegramAuth = async (authData) => {
             role: user.role,
             createdAt: user.created_at,
         },
+
     };
 };
 
@@ -562,5 +761,7 @@ module.exports = {
     loginWithGoogleCode,
     buildTelegramAuthUrl,
     loginWithTelegramAuth,
+    requestPasswordReset,
+    resetPassword,
     cleanupExpiredTokens,
 };

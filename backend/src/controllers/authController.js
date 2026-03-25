@@ -7,6 +7,8 @@ const {
     loginWithTelegramAuth,
     buildGoogleAuthUrl,
     buildTelegramAuthUrl,
+    requestPasswordReset,
+    resetPassword: resetPasswordService
 } = require("../services/authService");
 const {validationResult} = require('express-validator');
 const xss = require('xss');
@@ -20,7 +22,6 @@ const register = async (req, res, next) => {
     try {
         const userData = {
             ...req.body,
-            username: typeof req.body.username === 'string' ? xss(req.body.username) : req.body.username
             username: xss(req.body.username || '')
         };
 
@@ -111,6 +112,23 @@ const googleAuthUrl = async (req, res, next) => {
     }
 };
 
+const forgotPassword = async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({errors: errors.array()});
+    }
+
+    try {
+        const result = await requestPasswordReset({
+            email: req.body.email
+        });
+
+        return res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+};
+
 const googleExchange = async (req, res, next) => {
     try {
         const { code } = req.body || {};
@@ -163,6 +181,22 @@ const telegramVerify = async (req, res, next) => {
     }
 };
 
+const resetPassword = async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({errors: errors.array()});
+    }
+
+    try {
+        const result = await resetPasswordService(req.body);
+        res.clearCookie('refreshToken');
+
+        return res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     register,
     login,
@@ -172,4 +206,6 @@ module.exports = {
     googleExchange,
     telegramAuthUrl,
     telegramVerify,
+    forgotPassword,
+    resetPassword,
 };
