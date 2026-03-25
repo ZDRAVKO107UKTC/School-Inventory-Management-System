@@ -5,6 +5,8 @@ const db = require("../../models");
 const { User, RefreshToken } = db;
 
 const SALT_ROUNDS = 10;
+const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+const GOOGLE_TOKEN_INFO_ENDPOINT = "https://oauth2.googleapis.com/tokeninfo";
 
 const isValidEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -28,6 +30,234 @@ const generateAccessToken = (user) => {
 
 const generateRefreshToken = () => {
     return crypto.randomBytes(64).toString('hex');
+};
+
+const getGoogleOAuthConfig = () => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+
+    if (!clientId || !clientSecret || !redirectUri) {
+        const error = new Error("Google OAuth is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI.");
+        error.statusCode = 500;
+        throw error;
+    }
+
+    return { clientId, clientSecret, redirectUri };
+};
+
+const getTelegramOAuthConfig = () => {
+    const botId = process.env.TELEGRAM_BOT_ID;
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const redirectUri = process.env.TELEGRAM_REDIRECT_URI;
+
+    if (!botId || !botToken || !redirectUri) {
+        const error = new Error("Telegram OAuth is not configured. Set TELEGRAM_BOT_ID, TELEGRAM_BOT_TOKEN and TELEGRAM_REDIRECT_URI.");
+        error.statusCode = 500;
+        throw error;
+    }
+
+    return { botId, botToken, redirectUri };
+};
+
+const toSafeUsernameBase = (value) => {
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 24);
+};
+
+const ensureUniqueUsername = async (seed) => {
+    const base = (seed && seed.length >= 3 ? seed : 'google_user').slice(0, 24);
+    let candidate = base;
+    let suffix = 1;
+
+    // Keep appending a suffix until the username is unique.
+    while (await User.findOne({ where: { username: candidate } })) {
+        const room = 30 - String(suffix).length - 1;
+        candidate = `${base.slice(0, Math.max(3, room))}_${suffix}`;
+        suffix += 1;
+    }
+
+    return candidate;
+};
+
+const exchangeGoogleCode = async (code) => {
+    const { clientId, clientSecret, redirectUri } = getGoogleOAuthConfig();
+    const body = new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+    });
+
+    const response = await fetch(GOOGLE_TOKEN_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.id_token) {
+        const error = new Error(payload.error_description || payload.error || 'Failed to exchange Google authorization code');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    return payload.id_token;
+};
+
+const buildGoogleAuthUrl = () => {
+    const { clientId, redirectUri } = getGoogleOAuthConfig();
+    const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'openid email profile',
+        access_type: 'offline',
+        prompt: 'consent',
+    });
+
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+};
+
+const buildTelegramAuthUrl = () => {
+    const { botId, redirectUri } = getTelegramOAuthConfig();
+    const origin = new URL(redirectUri).origin;
+    const params = new URLSearchParams({
+        bot_id: botId,
+        origin,
+        return_to: redirectUri,
+        request_access: 'write',
+    });
+
+    return `https://oauth.telegram.org/auth?${params.toString()}`;
+};
+
+const validateGoogleIdToken = async (idToken) => {
+    const params = new URLSearchParams({ id_token: idToken });
+    const response = await fetch(`${GOOGLE_TOKEN_INFO_ENDPOINT}?${params.toString()}`);
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        const error = new Error(payload.error_description || payload.error || 'Invalid Google ID token');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    const { clientId } = getGoogleOAuthConfig();
+    if (payload.aud !== clientId) {
+        const error = new Error('Google token audience mismatch');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    if (!payload.email || payload.email_verified !== 'true') {
+        const error = new Error('Google account email is not verified');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    return {
+        email: payload.email,
+        name: payload.name || payload.email.split('@')[0],
+    };
+};
+
+const findOrCreateGoogleUser = async ({ email, name }) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = await User.findOne({
+        where: { email: { [Op.iLike]: normalizedEmail } }
+    });
+
+    if (existingUser) {
+        return existingUser;
+    }
+
+    const usernameBase = toSafeUsernameBase(name || normalizedEmail.split('@')[0]);
+    const username = await ensureUniqueUsername(usernameBase);
+    const generatedPassword = crypto.randomBytes(24).toString('hex');
+    const passwordHash = await bcrypt.hash(generatedPassword, SALT_ROUNDS);
+
+    return User.create({
+        username,
+        email: normalizedEmail,
+        password_hash: passwordHash,
+        role: 'student',
+    });
+};
+
+const verifyTelegramAuthData = (authData) => {
+    const { botToken } = getTelegramOAuthConfig();
+    const hash = authData.hash;
+
+    if (!hash) {
+        const error = new Error('Telegram auth hash is required');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const dataToCheck = Object.keys(authData)
+        .filter((key) => key !== 'hash' && authData[key] !== undefined && authData[key] !== null && authData[key] !== '')
+        .sort()
+        .map((key) => `${key}=${authData[key]}`)
+        .join('\n');
+
+    const secretKey = crypto.createHash('sha256').update(botToken).digest();
+    const expectedHash = crypto
+        .createHmac('sha256', secretKey)
+        .update(dataToCheck)
+        .digest('hex');
+
+    const provided = Buffer.from(hash, 'hex');
+    const expected = Buffer.from(expectedHash, 'hex');
+    if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+        const error = new Error('Invalid Telegram authentication signature');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    const authDate = Number(authData.auth_date || 0);
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (!authDate || nowSeconds - authDate > 24 * 60 * 60) {
+        const error = new Error('Telegram authentication data has expired');
+        error.statusCode = 401;
+        throw error;
+    }
+};
+
+const findOrCreateTelegramUser = async (authData) => {
+    const telegramId = String(authData.id || '').trim();
+    if (!telegramId) {
+        const error = new Error('Telegram user id is required');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const syntheticEmail = `tg_${telegramId}@telegram.local`;
+    const existingUser = await User.findOne({
+        where: { email: { [Op.iLike]: syntheticEmail } }
+    });
+
+    if (existingUser) {
+        return existingUser;
+    }
+
+    const fullName = [authData.first_name, authData.last_name].filter(Boolean).join('_');
+    const usernameSeed = toSafeUsernameBase(authData.username || fullName || `telegram_${telegramId}`);
+    const username = await ensureUniqueUsername(usernameSeed);
+    const generatedPassword = crypto.randomBytes(24).toString('hex');
+    const passwordHash = await bcrypt.hash(generatedPassword, SALT_ROUNDS);
+
+    return User.create({
+        username,
+        email: syntheticEmail,
+        password_hash: passwordHash,
+        role: 'student',
+    });
 };
 
 const registerUser = async ({ username, email, password, role }) => {
@@ -246,6 +476,69 @@ const logoutUser = async (refreshToken) => {
     };
 };
 
+const loginWithGoogleCode = async (code) => {
+    if (!code) {
+        const error = new Error('Google authorization code is required');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const idToken = await exchangeGoogleCode(code);
+    const googleProfile = await validateGoogleIdToken(idToken);
+    const user = await findOrCreateGoogleUser(googleProfile);
+
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await RefreshToken.create({
+        token: refreshToken,
+        user_id: user.id,
+        expires_at: expiresAt,
+    });
+
+    return {
+        accessToken,
+        refreshToken,
+        user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            createdAt: user.created_at,
+        },
+    };
+};
+
+const loginWithTelegramAuth = async (authData) => {
+    verifyTelegramAuthData(authData);
+    const user = await findOrCreateTelegramUser(authData);
+
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await RefreshToken.create({
+        token: refreshToken,
+        user_id: user.id,
+        expires_at: expiresAt,
+    });
+
+    return {
+        accessToken,
+        refreshToken,
+        user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            createdAt: user.created_at,
+        },
+    };
+};
+
 // Cleanup expired tokens (called by cron job)
 const cleanupExpiredTokens = async () => {
     const deleted = await RefreshToken.destroy({
@@ -265,5 +558,9 @@ module.exports = {
     loginUser,
     refreshAccessToken,
     logoutUser,
+    buildGoogleAuthUrl,
+    loginWithGoogleCode,
+    buildTelegramAuthUrl,
+    loginWithTelegramAuth,
     cleanupExpiredTokens,
 };

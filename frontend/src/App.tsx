@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import OAuthCallbackPage from '@/pages/OAuthCallbackPage';
 import { useAuthStore } from '@/stores/authStore';
 
 const AuthPage = lazy(() => import('@/pages/AuthPage'));
@@ -37,6 +38,8 @@ const App: React.FC = () => {
             <AuthPage defaultMode="login" />
           }
         />
+        <Route path="/auth/callback/google" element={<OAuthCallbackPage provider="google" />} />
+        <Route path="/auth/callback/telegram" element={<OAuthCallbackPage provider="telegram" />} />
         <Route
           path="/admin/login"
           element={<AdminLoginPage />}

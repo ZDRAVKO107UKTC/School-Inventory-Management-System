@@ -2,7 +2,11 @@ const {
     registerUser,
     loginUser,
     refreshAccessToken,
-    logoutUser
+    logoutUser,
+    loginWithGoogleCode,
+    loginWithTelegramAuth,
+    buildGoogleAuthUrl,
+    buildTelegramAuthUrl,
 } = require("../services/authService");
 const {validationResult} = require('express-validator');
 const xss = require('xss');
@@ -98,9 +102,74 @@ const logout = async (req, res, next) => {
     }
 };
 
+const googleAuthUrl = async (req, res, next) => {
+    try {
+        const url = buildGoogleAuthUrl();
+        return res.status(200).json({ url });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const googleExchange = async (req, res, next) => {
+    try {
+        const { code } = req.body || {};
+        const data = await loginWithGoogleCode(code);
+
+        res.cookie('refreshToken', data.refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        return res.status(200).json({
+            message: 'Google authentication successful',
+            accessToken: data.accessToken,
+            user: data.user,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const telegramAuthUrl = async (req, res, next) => {
+    try {
+        const url = buildTelegramAuthUrl();
+        return res.status(200).json({ url });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const telegramVerify = async (req, res, next) => {
+    try {
+        const data = await loginWithTelegramAuth(req.body || {});
+
+        res.cookie('refreshToken', data.refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        return res.status(200).json({
+            message: 'Telegram authentication successful',
+            accessToken: data.accessToken,
+            user: data.user,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     register,
     login,
     refresh,
     logout,
+    googleAuthUrl,
+    googleExchange,
+    telegramAuthUrl,
+    telegramVerify,
 };

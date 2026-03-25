@@ -6,6 +6,7 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { useAuthStore } from '@/stores/authStore';
+import { getAuthService } from '@/services/authService';
 
 type ViewKey = 'login' | 'signup' | 'forgot';
 
@@ -30,6 +31,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => 
     login,
     signup,
     setError,
+    setOAuthLoading,
+    isOAuthLoading,
   } = useAuthStore();
   const cardRef = useRef<HTMLDivElement>(null);
   const prevHeight = useRef<number>(0);
@@ -86,7 +89,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => 
 
     const currentUser = useAuthStore.getState().user;
     if (currentUser?.role === 'admin') {
-      navigate('/admin/dashboard');
+      navigate('/dashboard');
       return;
     }
 
@@ -101,6 +104,34 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => 
   const handleForgotPassword = (email: string) => {
     // Current backend has no password-reset endpoint yet.
     setError(`Password reset endpoint is not available yet. Saved email: ${email}`);
+  };
+
+  const handleGoogleAuth = async () => {
+    setOAuthLoading(true, 'google');
+    setError(null);
+    const authService = getAuthService();
+    const result = await authService.getGoogleAuthUrl();
+    if (!result.success || !result.data?.url) {
+      setOAuthLoading(false);
+      setError(result.error || 'Failed to start Google authentication');
+      return;
+    }
+
+    window.location.href = result.data.url;
+  };
+
+  const handleTelegramAuth = async () => {
+    setOAuthLoading(true, 'telegram');
+    setError(null);
+    const authService = getAuthService();
+    const result = await authService.getTelegramAuthUrl();
+    if (!result.success || !result.data?.url) {
+      setOAuthLoading(false);
+      setError(result.error || 'Failed to start Telegram authentication');
+      return;
+    }
+
+    window.location.href = result.data.url;
   };
 
   return (
@@ -151,17 +182,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => 
               ) : activeView === 'login' ? (
                 <LoginForm
                   onSwitchToSignup={() => switchView(() => setMode('signup'))}
-                  onSwitchToAdmin={() => navigate('/admin/login')}
                   onForgotPassword={() => switchView(() => setShowForgotPassword(true))}
                   onSubmit={handleLogin}
-                  isLoading={isLoading}
+                  onGoogleClick={handleGoogleAuth}
+                  onTelegramClick={handleTelegramAuth}
+                  isLoading={isLoading || isOAuthLoading}
                   error={error}
                 />
               ) : (
                 <SignupForm
                   onSwitchToLogin={() => switchView(() => setMode('login'))}
                   onSubmit={handleSignup}
-                  isLoading={isLoading}
+                  onGoogleClick={handleGoogleAuth}
+                  onTelegramClick={handleTelegramAuth}
+                  isLoading={isLoading || isOAuthLoading}
                   error={error}
                 />
               )}

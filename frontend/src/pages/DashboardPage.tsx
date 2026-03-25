@@ -34,6 +34,7 @@ import {
 import type { BorrowRequest, Equipment, User } from '@/types/auth';
 import { ParallaxCarousel } from '@/components/ui/ParallaxCarousel';
 import { Virtual3DModel } from '@/components/ui/Virtual3DModel';
+import { DashboardActionModal } from '@/components/ui/DashboardActionModal';
 import { FloorPlanMap } from '@/components/spatial/FloorPlanMap';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -104,10 +105,29 @@ const DashboardPage: React.FC = () => {
 
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    confirmText: string;
+    cancelText?: string;
+    variant?: 'danger' | 'primary';
+    onConfirm: () => void | Promise<void>;
+  } | null>(null);
+  const [rejectDialog, setRejectDialog] = useState<{ requestId: number; reason: string } | null>(null);
 
   const isAdmin = user?.role === 'admin';
   const isTeacher = user?.role === 'teacher';
   const isManager = isAdmin || isTeacher;
+
+  const showError = (text: string) => {
+    setError(text);
+    setTimeout(() => setError(null), 4000);
+  };
+
+  const showMessage = (text: string) => {
+    setMessage(text);
+    setTimeout(() => setMessage(null), 3000);
+  };
 
   useEffect(() => {
     localStorage.setItem('sims_theme', theme);
@@ -181,7 +201,7 @@ const DashboardPage: React.FC = () => {
     if (res.success) {
       setEditEquipmentModal(null);
       fetchData();
-    } else alert(res.error || 'Failed to update equipment');
+    } else showError(res.error || 'Failed to update equipment');
   };
 
   const handleEditUserSubmit = async () => {
@@ -194,7 +214,7 @@ const DashboardPage: React.FC = () => {
     if (res.success) {
       setEditUserModal(null);
       fetchData();
-    } else alert(res.error || 'Failed to update user');
+    } else showError(res.error || 'Failed to update user');
   };
 
   const handleUpdateFloor = async () => {
@@ -203,7 +223,7 @@ const DashboardPage: React.FC = () => {
     if (res.success) {
       setEditFloorModal(null);
       fetchData();
-    } else alert(res.error || 'Failed to update floor');
+    } else showError(res.error || 'Failed to update floor');
   };
 
   const handleUpdateRoom = async () => {
@@ -212,7 +232,7 @@ const DashboardPage: React.FC = () => {
     if (res.success) {
       setEditRoomModal(null);
       fetchData();
-    } else alert(res.error || 'Failed to update room');
+    } else showError(res.error || 'Failed to update room');
   };
 
   const onDownloadCSV = () => {
@@ -229,11 +249,10 @@ const DashboardPage: React.FC = () => {
     const res = await resetSystemHistory(token);
     if (res.success) {
       setIsResetHistoryModalOpen(false);
-      setMessage('System history has been reset.');
-      setTimeout(() => setMessage(null), 3000);
+      showMessage('System history has been reset.');
       fetchData();
     } else {
-      alert(res.error || "Failed to reset history");
+      showError(res.error || 'Failed to reset history');
     }
   };
 
@@ -277,30 +296,35 @@ const DashboardPage: React.FC = () => {
     if (res.success) {
       setIsCreateFloorModalOpen(false);
       setNewFloorName('');
-      setMessage('Floor created successfully.');
-      setTimeout(() => setMessage(null), 3000);
+      showMessage('Floor created successfully.');
       fetchData();
       if (res.data?.floor) setCurrentFloorId(res.data.floor.id);
-    } else alert(res.error || 'Failed to create floor');
+    } else showError(res.error || 'Failed to create floor');
   };
 
   const handleApprove = async (id: number) => {
     if (!token) return;
     const res = await approveRequest(token, id);
     if (res.success) {
-      alert('Request approved!');
+      showMessage('Request approved!');
       fetchData();
-    } else alert(res.error || 'Failed to approve');
+    } else showError(res.error || 'Failed to approve');
   };
 
   const handleReject = async (id: number) => {
-    if (!token) return;
-    const reason = prompt('Reason for rejection (optional):');
-    const res = await rejectRequest(token, id, reason || undefined);
+    setRejectDialog({ requestId: id, reason: '' });
+  };
+
+  const handleRejectSubmit = async () => {
+    if (!token || !rejectDialog) return;
+    const res = await rejectRequest(token, rejectDialog.requestId, rejectDialog.reason || undefined);
     if (res.success) {
-      alert('Request rejected.');
+      setRejectDialog(null);
+      showMessage('Request rejected.');
       fetchData();
-    } else alert(res.error || 'Failed to reject');
+    } else {
+      showError(res.error || 'Failed to reject');
+    }
   };
 
   const handleDeleteFloor = async (id: number) => {
@@ -317,30 +341,47 @@ const DashboardPage: React.FC = () => {
       setIsDeleteFloorModalOpen(false);
       setFloorToDeleteId(null);
       fetchData();
-      setMessage('Floor deleted.');
-      setTimeout(() => setMessage(null), 3000);
-    } else alert(res.error || 'Failed to delete floor');
+      showMessage('Floor deleted.');
+    } else showError(res.error || 'Failed to delete floor');
   };
 
   const handleDeleteRoom = async (id: number) => {
     if (!token || !isAdmin) return;
-    if (!confirm('Delete this room and unassign all equipment?')) return;
-    const res = await deleteRoom(token, id);
-    if (res.success) {
-      if (selectedRoomId === id) setSelectedRoomId(null);
-      fetchData();
-    } else alert(res.error || 'Failed to delete room');
+    setConfirmDialog({
+      title: 'Delete Room',
+      message: 'Are you sure you want to delete this room? All assigned equipment will be unassigned.',
+      confirmText: 'Delete Room',
+      variant: 'danger',
+      onConfirm: async () => {
+        const res = await deleteRoom(token, id);
+        if (res.success) {
+          if (selectedRoomId === id) setSelectedRoomId(null);
+          fetchData();
+          showMessage('Room deleted.');
+        } else {
+          showError(res.error || 'Failed to delete room');
+        }
+      }
+    });
   };
 
   const handleDeleteEquipment = async (id: number) => {
     if (!token || !isAdmin) return;
-    if (!confirm('Permanently remove this equipment?')) return;
-    const res = await deleteEquipmentAsAdmin(token, id);
-    if (res.success) {
-      fetchData();
-      setMessage('Equipment deleted');
-      setTimeout(() => setMessage(null), 3000);
-    } else alert(res.error || 'Deletion failed');
+    setConfirmDialog({
+      title: 'Delete Equipment',
+      message: 'Are you sure you want to permanently delete this equipment item?',
+      confirmText: 'Delete Gear',
+      variant: 'danger',
+      onConfirm: async () => {
+        const res = await deleteEquipmentAsAdmin(token, id);
+        if (res.success) {
+          fetchData();
+          showMessage('Equipment deleted');
+        } else {
+          showError(res.error || 'Deletion failed');
+        }
+      }
+    });
   };
 
   const handleAddUser = async () => {
@@ -349,19 +390,32 @@ const DashboardPage: React.FC = () => {
     if (res.success) {
       setNewUser({ username: '', email: '', password: '', role: 'student' });
       fetchData();
-      setMessage('User created successfully');
-      setTimeout(() => setMessage(null), 3000);
-    } else alert(res.error || 'Failed to create user');
+      showMessage('User created successfully');
+    } else showError(res.error || 'Failed to create user');
   };
 
   const handleDeleteUser = async (id: number) => {
     if (!token || !isAdmin) return;
-    if (id === user?.id) return alert('You cannot delete yourself');
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    const res = await deleteUserAsAdmin(token, id);
-    if (res.success) {
-      fetchData();
-    } else alert(res.error || 'Failed to delete user');
+    if (id === user?.id) {
+      showError('You cannot delete yourself');
+      return;
+    }
+
+    setConfirmDialog({
+      title: 'Delete User',
+      message: 'Are you sure you want to delete this user account?',
+      confirmText: 'Delete User',
+      variant: 'danger',
+      onConfirm: async () => {
+        const res = await deleteUserAsAdmin(token, id);
+        if (res.success) {
+          fetchData();
+          showMessage('User deleted.');
+        } else {
+          showError(res.error || 'Failed to delete user');
+        }
+      }
+    });
   };
 
   const handleAssignEquipment = async (equipmentId: number, roomId: number | null) => {
@@ -373,7 +427,7 @@ const DashboardPage: React.FC = () => {
       fetchData();
       setTimeout(() => setMessage(null), 3000);
     } else {
-      alert(res.error || 'Failed to update assignment');
+      showError(res.error || 'Failed to update assignment');
     }
   };
 
@@ -676,7 +730,7 @@ const DashboardPage: React.FC = () => {
                       setNewEquipment({ name: '', type: '', condition: 'good' as any, quantity: 1 });
                       fetchData();
                       setTimeout(() => setMessage(null), 3000);
-                    } else alert(res.error);
+                    } else showError(res.error || 'Failed to create equipment');
                   }}>Register Units</Button>
                 </div>
               </section>
@@ -893,6 +947,11 @@ const DashboardPage: React.FC = () => {
               </h1>
               <p className="text-xs sm:text-base text-slate-500 font-medium pb-2 border-b border-[#d2d2d7] dark:border-[#303030]">
                 Welcome, <span className="text-[#1d1d1f] dark:text-[#f5f5f7] font-bold">{user?.username}</span>
+                {user?.role === 'admin' && (
+                  <span className="ml-2 inline-flex items-center rounded-full border border-[#0066cc]/40 bg-[#0066cc]/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#0066cc] dark:border-[#7aa8ff]/40 dark:bg-[#7aa8ff]/10 dark:text-[#9fc0ff]">
+                    Admin Dashboard
+                  </span>
+                )}
               </p>
             </div>
 
@@ -1371,6 +1430,38 @@ const DashboardPage: React.FC = () => {
           onClose={() => setConditionHistoryModal(null)}
         />
       )}
+
+      <DashboardActionModal
+        open={!!confirmDialog}
+        title={confirmDialog?.title || ''}
+        message={confirmDialog?.message || ''}
+        confirmText={confirmDialog?.confirmText || 'Confirm'}
+        cancelText={confirmDialog?.cancelText || 'Cancel'}
+        variant={confirmDialog?.variant || 'danger'}
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={async () => {
+          if (!confirmDialog) return;
+          const action = confirmDialog.onConfirm;
+          setConfirmDialog(null);
+          await action();
+        }}
+      />
+
+      <DashboardActionModal
+        open={!!rejectDialog}
+        title="Reject Request"
+        message="Provide a reason for rejection (optional)."
+        confirmText="Reject"
+        cancelText="Cancel"
+        variant="danger"
+        input={{
+          value: rejectDialog?.reason || '',
+          onChange: (value) => setRejectDialog((prev) => (prev ? { ...prev, reason: value } : prev)),
+          placeholder: 'Reason (optional)',
+        }}
+        onCancel={() => setRejectDialog(null)}
+        onConfirm={handleRejectSubmit}
+      />
 
 
       <style dangerouslySetInnerHTML={{ __html: `.custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #86868b; border-radius: 10px; }` }} />

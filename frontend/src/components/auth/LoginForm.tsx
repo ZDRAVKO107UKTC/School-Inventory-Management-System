@@ -12,18 +12,20 @@ import { OAuthButtons } from './OAuthButtons';
 
 export interface LoginFormProps {
   onSwitchToSignup?: () => void;
-  onSwitchToAdmin?: () => void;
   onForgotPassword?: () => void;
   onSubmit?: (email: string, password: string) => void;
+  onGoogleClick?: () => void;
+  onTelegramClick?: () => void;
   isLoading?: boolean;
   error?: string | null;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
   onSwitchToSignup,
-  onSwitchToAdmin,
   onForgotPassword,
   onSubmit,
+  onGoogleClick,
+  onTelegramClick,
   isLoading = false,
   error,
 }) => {
@@ -155,8 +157,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       {/* OAuth */}
       <OAuthButtons
+        onGoogleClick={onGoogleClick}
+        onTelegramClick={onTelegramClick}
         isLoading={isLoading}
-        // Placeholder: no OAuth logic
       />
 
       {/* Sign Up Link */}
@@ -167,17 +170,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           className="font-semibold text-lime-700 dark:text-purple-400 hover:underline"
         >
           Sign up
-        </button>
-      </p>
-
-      <p className="text-center text-xs text-slate-500 dark:text-slate-500">
-        Need admin tools?{' '}
-        <button
-          type="button"
-          onClick={onSwitchToAdmin}
-          className="font-semibold text-lime-700 dark:text-purple-400 hover:underline"
-        >
-          Admin panel login
         </button>
       </p>
     </div>

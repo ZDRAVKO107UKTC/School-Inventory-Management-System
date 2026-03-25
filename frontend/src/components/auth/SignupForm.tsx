@@ -13,6 +13,8 @@ import { OAuthButtons } from './OAuthButtons';
 export interface SignupFormProps {
   onSwitchToLogin?: () => void;
   onSubmit?: (username: string, email: string, password: string) => void;
+  onGoogleClick?: () => void;
+  onTelegramClick?: () => void;
   isLoading?: boolean;
   error?: string | null;
 }
@@ -20,6 +22,8 @@ export interface SignupFormProps {
 export const SignupForm: React.FC<SignupFormProps> = ({
   onSwitchToLogin,
   onSubmit,
+  onGoogleClick,
+  onTelegramClick,
   isLoading = false,
   error,
 }) => {
@@ -214,8 +218,9 @@ export const SignupForm: React.FC<SignupFormProps> = ({
 
       {/* OAuth */}
       <OAuthButtons
+        onGoogleClick={onGoogleClick}
+        onTelegramClick={onTelegramClick}
         isLoading={isLoading}
-        // Placeholder: no OAuth logic
       />
 
       {/* Sign In Link */}

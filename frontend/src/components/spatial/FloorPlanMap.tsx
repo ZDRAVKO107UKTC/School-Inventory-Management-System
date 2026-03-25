@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { Room, createRoom } from '../../services/spatialService';
+import { DashboardActionModal } from '../ui/DashboardActionModal';
 
 interface FloorPlanMapProps {
   floorId: number;
@@ -28,6 +29,11 @@ export const FloorPlanMap: React.FC<FloorPlanMapProps> = ({
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [currentRect, setCurrentRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [noticeDialog, setNoticeDialog] = useState<{ title: string; message: string } | null>(null);
+  const [roomCreateDialog, setRoomCreateDialog] = useState<{
+    name: string;
+    rect: { x: number; y: number; w: number; h: number };
+  } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
   const getMousePos = (e: React.MouseEvent) => {
@@ -64,30 +70,50 @@ export const FloorPlanMap: React.FC<FloorPlanMapProps> = ({
     setIsDrawing(false);
     
     if (floorId <= 0) {
-      alert('Please select or create a floor first!');
+      setNoticeDialog({
+        title: 'No Floor Selected',
+        message: 'Please select or create a floor before drawing a room.'
+      });
       setCurrentRect(null);
       return;
     }
 
     if (currentRect.w > 10 && currentRect.h > 10) {
-      const name = prompt('Enter Room Name:', `Room ${rooms.length + 1}`);
-      if (name) {
-        const res = await createRoom(token, {
-          floor_id: floorId,
-          name,
-          x: Math.round(currentRect.x),
-          y: Math.round(currentRect.y),
-          width: Math.round(currentRect.w),
-          height: Math.round(currentRect.h)
-        });
-        if (res.success) {
-          onRefresh();
-        } else {
-          alert(`Failed to save room: ${res.error || 'Server error'}`);
-        }
-      }
+      setRoomCreateDialog({
+        name: `Room ${rooms.length + 1}`,
+        rect: currentRect
+      });
     }
     setCurrentRect(null);
+  };
+
+  const handleCreateRoom = async () => {
+    if (!roomCreateDialog) return;
+
+    const roomName = roomCreateDialog.name.trim();
+    if (!roomName) {
+      setNoticeDialog({ title: 'Room Name Required', message: 'Please enter a room name.' });
+      return;
+    }
+
+    const res = await createRoom(token, {
+      floor_id: floorId,
+      name: roomName,
+      x: Math.round(roomCreateDialog.rect.x),
+      y: Math.round(roomCreateDialog.rect.y),
+      width: Math.round(roomCreateDialog.rect.w),
+      height: Math.round(roomCreateDialog.rect.h)
+    });
+
+    if (res.success) {
+      setRoomCreateDialog(null);
+      onRefresh();
+    } else {
+      setNoticeDialog({
+        title: 'Save Failed',
+        message: `Failed to save room: ${res.error || 'Server error'}`
+      });
+    }
   };
 
   return (
@@ -177,6 +203,33 @@ export const FloorPlanMap: React.FC<FloorPlanMapProps> = ({
       <div className="absolute bottom-4 right-4 px-3 py-1 bg-white/80 dark:bg-[#1d1d1f]/80 backdrop-blur-md rounded-full border border-[#d2d2d7] dark:border-[#303030] text-[10px] font-bold text-[#86868b]">
         {isAdmin ? 'Admin View: Design Active' : 'Viewer Mode: Selective Filtering'}
       </div>
+
+      <DashboardActionModal
+        open={!!roomCreateDialog}
+        title="Create Room"
+        message="Enter room name"
+        confirmText="Create Room"
+        cancelText="Cancel"
+        variant="primary"
+        input={{
+          value: roomCreateDialog?.name || '',
+          onChange: (value) => setRoomCreateDialog((prev) => (prev ? { ...prev, name: value } : prev)),
+          placeholder: 'Room 1',
+        }}
+        onCancel={() => setRoomCreateDialog(null)}
+        onConfirm={handleCreateRoom}
+      />
+
+      <DashboardActionModal
+        open={!!noticeDialog}
+        title={noticeDialog?.title || ''}
+        message={noticeDialog?.message || ''}
+        confirmText="OK"
+        cancelText="Close"
+        variant="primary"
+        onCancel={() => setNoticeDialog(null)}
+        onConfirm={() => setNoticeDialog(null)}
+      />
     </div>
   );
 };

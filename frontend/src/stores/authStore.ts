@@ -11,7 +11,7 @@ export interface AuthStore {
   token: string | null;
   showForgotPassword: boolean;
   isOAuthLoading: boolean;
-  oauthProvider: 'google' | 'apple' | null;
+  oauthProvider: 'google' | 'telegram' | null;
   setMode: (mode: AuthMode) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -19,7 +19,8 @@ export interface AuthStore {
   setToken: (token: string | null) => void;
   setIsAuthenticated: (authenticated: boolean) => void;
   setShowForgotPassword: (show: boolean) => void;
-  setOAuthLoading: (loading: boolean, provider?: 'google' | 'apple') => void;
+  setOAuthLoading: (loading: boolean, provider?: 'google' | 'telegram') => void;
+  completeOAuthSession: (session: { accessToken: string; user: User }) => void;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (username: string, email: string, password: string) => Promise<boolean>;
   hydrateSession: () => Promise<void>;
@@ -77,6 +78,19 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setShowForgotPassword: (show) => set({ showForgotPassword: show }),
   setOAuthLoading: (loading, provider) =>
     set({ isOAuthLoading: loading, oauthProvider: provider || null }),
+  completeOAuthSession: (session) => {
+    saveSession(session.accessToken, session.user);
+    set({
+      isAuthenticated: true,
+      token: session.accessToken,
+      user: session.user,
+      error: null,
+      isLoading: false,
+      isOAuthLoading: false,
+      oauthProvider: null,
+      showForgotPassword: false,
+    });
+  },
 
   login: async (email, password) => {
     set({ isLoading: true, error: null });

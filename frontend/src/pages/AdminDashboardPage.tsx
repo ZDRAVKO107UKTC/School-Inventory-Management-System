@@ -116,7 +116,7 @@ const AdminDashboardPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isAuthenticated || !token) { navigate('/admin/login', { replace: true }); return; }
+    if (!isAuthenticated || !token) { navigate('/auth', { replace: true }); return; }
     if (user?.role !== 'admin') { navigate('/dashboard', { replace: true }); return; }
     refreshAdminData();
     const id = setInterval(refreshAdminData, 10000);
@@ -144,7 +144,7 @@ const AdminDashboardPage: React.FC = () => {
     await refreshAdminData();
   };
 
-  const onLogout = async () => { await logout(); navigate('/admin/login', { replace: true }); };
+  const onLogout = async () => { await logout(); navigate('/auth', { replace: true }); };
 
   const handleEditEquipmentSubmit = async () => {
     if (!editEquipmentModal || !token) return;
