@@ -1,4 +1,5 @@
 const requestService = require('../services/requestService');
+const equipmentService = require('../services/equipmentService');
 const notificationService = require('../services/notificationService');
 const { getEmailProvider, isEmailEnabled, isEmailConfigured, getFromAddress } = require('../services/emailService');
 const { getStorageStatus } = require('../services/storageService');
@@ -6,6 +7,7 @@ const {
     exportRowsToGoogleSheet,
     getGoogleSheetsStatus
 } = require('../services/documentProviderService');
+const { createBackupSheet } = require('../services/googleSheetsService');
 const { Parser } = require('json2csv');
 const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
 
@@ -121,6 +123,32 @@ const exportReport = async (req, res) => {
     } catch (error) {
         console.error('Export Error:', error);
         return res.status(500).json({ message: "Export failed" });
+    }
+};
+
+/**
+ * BE-025: Export Backup to Google Sheets
+ */
+const exportToGoogleSheets = async (req, res) => {
+    try {
+        const adminEmail = process.env.GOOGLE_SHEET_OWNER_EMAIL || "admin@school.com";
+        const inventoryData = await equipmentService.getAllEquipment({}, false);
+        const historyData = await requestService.getHistoryReport({}, false);
+
+        // getAllEquipment returns an object { rows, count } if pagination is passed. Oh wait! I passed false. It returns array.
+        const result = await createBackupSheet(
+            adminEmail, 
+            Array.isArray(inventoryData) ? inventoryData : (inventoryData.rows || []), 
+            Array.isArray(historyData) ? historyData : (historyData.rows || [])
+        );
+
+        return res.status(200).json({ 
+            message: result.mock ? "Mock backup completed (no credentials)" : "Google Sheets backup created successfully",
+            url: result.url 
+        });
+    } catch (error) {
+        console.error('Google Sheets Export Error:', error);
+        return res.status(500).json({ message: "Backup to Google Sheets failed" });
     }
 };
 
@@ -261,6 +289,7 @@ module.exports = {
     getUsageReport,
     getHistoryReport,
     exportReport,
+    exportToGoogleSheets,
     clearHistory,
     getNotificationSummary,
     runNotificationCycle,

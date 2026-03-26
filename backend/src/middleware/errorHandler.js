@@ -1,4 +1,6 @@
 const errorHandler = (err, req, res, next) => {
+    console.error('[errorHandler] Full error detail:', err);
+
     if (err.code === "23505") {
         return res.status(409).json({
             message: "Email or username already exists",

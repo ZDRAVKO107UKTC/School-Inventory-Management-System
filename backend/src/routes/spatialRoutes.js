@@ -17,4 +17,9 @@ router.delete('/rooms/:id', authenticateToken, authorizeRoles('admin'), spatialC
 
 router.post('/assign', authenticateToken, authorizeRoles('admin', 'teacher'), spatialController.assignEquipmentToRoom);
 
+// User room assignments (Admin only)
+router.post('/users/assign', authenticateToken, authorizeRoles('admin'), spatialController.assignUserToRoom);
+router.delete('/users/:user_id/rooms/:room_id', authenticateToken, authorizeRoles('admin'), spatialController.unassignUserFromRoom);
+router.get('/users/:user_id/rooms', authenticateToken, spatialController.getUserRooms);
+
 module.exports = router;

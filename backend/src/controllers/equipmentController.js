@@ -1,97 +1,23 @@
 const equipmentService = require('../services/equipmentService');
 const { uploadMedia: uploadMediaToStorage } = require('../services/storageService');
 const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
-const {
-    serializeEquipmentWithPreview,
-    serializeEquipmentCollectionWithPreview
-} = require('../utils/equipmentMedia');
+const fs = require('fs');
+const path = require('path');
+const { uploadStream } = require('../utils/cloudinaryClient');
+const logFile = path.join(__dirname, '../../../error_log.txt');
 
-const normalizeEquipmentPayload = (payload) => {
-    const normalized = { ...payload };
-
-    for (const field of ['name', 'type', 'condition', 'status']) {
-        if (typeof normalized[field] === 'string') {
-            normalized[field] = normalized[field].trim();
-        }
-    }
-
-    for (const field of ['serial_number', 'location', 'photo_url']) {
-        if (typeof normalized[field] === 'string') {
-            normalized[field] = normalized[field].trim();
-            if (normalized[field] === '') {
-                normalized[field] = null;
-            }
-        }
-    }
-
-    if (normalized.room_id === '' || normalized.room_id === undefined) {
-        delete normalized.room_id;
-    }
-
-    return normalized;
+const generateRandomSerial = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const segment = () => Array.from({ length: 4 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+    return `SN-${segment()}-${segment()}`;
 };
-
-const handleEquipmentPersistenceError = (res, error) => {
-    if (error.name === 'SequelizeValidationError') {
-        return res.status(400).json({
-            message: error.errors?.[0]?.message || 'Invalid equipment payload'
-        });
-    }
-
-    if (error.name === 'SequelizeUniqueConstraintError') {
-        return res.status(409).json({
-            message: 'Equipment with this serial number already exists'
-        });
-    }
-
-    if (error.name === 'SequelizeForeignKeyConstraintError') {
-        return res.status(400).json({
-            message: 'Selected room does not exist'
-        });
-    }
-
-    return null;
-};
-
-const normalizeOptionalString = (value) => {
-    if (value === undefined || value === null) {
-        return undefined;
-    }
-
-    const normalized = String(value).trim();
-    return normalized === '' ? null : normalized;
-};
-
-const normalizeEquipmentPayload = (body, { isPartial = false } = {}) => {
-    const payload = { ...body };
-
-    if (!isPartial || payload.quantity !== undefined) {
-        payload.quantity = payload.quantity === undefined ? 1 : Number(payload.quantity);
-    }
-
-    if (!isPartial || payload.serial_number !== undefined) {
-        payload.serial_number = normalizeOptionalString(payload.serial_number);
-    }
-
-    if (!isPartial || payload.location !== undefined) {
-        payload.location = normalizeOptionalString(payload.location);
-    }
-
-    if (!isPartial || payload.photo_url !== undefined) {
-        payload.photo_url = normalizeOptionalString(payload.photo_url);
-    }
-
-    return payload;
-};
-
-const isPersistenceError = (error) => ['SequelizeValidationError', 'SequelizeUniqueConstraintError'].includes(error.name);
 
 const getEquipmentDetails = async (req, res) => {
     try {
         const {id} = req.params;
         const equipment = await equipmentService.getEquipmentById(id);
         if (!equipment) return res.status(404).json({ message: `Equipment with ID ${id} not found` });
-        return res.status(200).json(serializeEquipmentWithPreview(equipment));
+        return res.status(200).json(equipment);
     } catch (error) {
         return res.status(500).json({message: "Internal Server Error"});
     }
@@ -104,12 +30,12 @@ const getEquipment = async (req, res) => {
         const result = await equipmentService.getAllEquipment(filters, pagination);
 
         if (!pagination) {
-            return res.status(200).json(serializeEquipmentCollectionWithPreview(result));
+            return res.status(200).json(result);
         }
 
         const paginationMeta = buildPaginationMeta(result.count, pagination);
         applyPaginationHeaders(res, paginationMeta);
-        return res.status(200).json(serializeEquipmentCollectionWithPreview(result.rows));
+        return res.status(200).json(result.rows);
     } catch (error) {
         res.status(500).json({error: "Failed to fetch equipment"});
     }
@@ -197,70 +123,87 @@ const submitRequest = async (req, res) => {
 
 const createEquipment = async (req, res) => {
     try {
-        const payload = normalizeEquipmentPayload(req.body);
-        const { name, type, condition, quantity } = payload;
-
-        if (!name || !type || !condition || quantity === undefined) {
-            return res.status(400).json({
-                message: "Missing required fields: name, type, condition, quantity"
-            });
+        const data = { ...req.body };
+        // If serial number is empty or null, generate a random one
+        if (!data.serial_number || data.serial_number === '') {
+            data.serial_number = generateRandomSerial();
         }
 
-        const validConditions = ['new', 'good', 'fair', 'damaged'];
-        if (!validConditions.includes(condition)) {
-            return res.status(400).json({
-                message: `Invalid condition. Allowed values: ${validConditions.join(', ')}`
-            });
-        }
-
-        if (!Number.isInteger(quantity) || quantity < 0) {
-            return res.status(400).json({
-                message: "Quantity must be a non-negative integer"
-            });
-        }
-
-        const equipment = await equipmentService.createEquipment(payload);
+        const equipment = await equipmentService.createEquipment(data);
 
         return res.status(201).json({
             message: "Equipment created successfully",
-            equipment: serializeEquipmentWithPreview(equipment)
+            equipment
         });
     } catch (error) {
-        if (isPersistenceError(error)) {
-            return res.status(400).json({ message: error.errors?.[0]?.message || error.message });
-        }
-        console.error("Error creating equipment:", error);
-        return handleEquipmentPersistenceError(res, error)
-            || res.status(500).json({message: "Internal Server Error"});
+        const detail = `[${new Date().toISOString()}] CREATE ERROR: ${error.stack}\nBody: ${JSON.stringify(req.body)}\n`;
+        fs.appendFileSync(logFile, detail);
+        
+        // Return 400 for uniqueness or validation errors so they show in alert
+        const isValidationError = error.name === 'SequelizeUniqueConstraintError' || error.name === 'SequelizeValidationError';
+        return res.status(isValidationError ? 400 : 500).json({ 
+            message: error.message || "Failed to create equipment" 
+        });
     }
 };
 
 const updateEquipment = async (req, res) => {
     try {
         const { id } = req.params;
-        const data = normalizeEquipmentPayload(req.body);
-        // Basic validation
-        if (data.quantity !== undefined && data.quantity < 0) {
-            return res.status(400).json({ message: "Quantity must be a non-negative number" });
-        const data = normalizeEquipmentPayload(req.body, { isPartial: true });
-
-        if (data.quantity !== undefined && (!Number.isInteger(data.quantity) || data.quantity < 0)) {
-            return res.status(400).json({ message: "Quantity must be a non-negative integer" });
-        }
-
+        const data = { ...req.body };
+        if (data.serial_number === '') data.serial_number = null;
+        
         const updatedEquipment = await equipmentService.updateEquipment(id, data);
         if (!updatedEquipment) return res.status(404).json({ message: "Equipment not found" });
+        return res.status(200).json({ message: "Equipment updated successfully", equipment: updatedEquipment });
+    } catch (error) {
+        const detail = `[${new Date().toISOString()}] UPDATE ERROR (ID ${req.params.id}): ${error.stack}\nBody: ${JSON.stringify(req.body)}\n`;
+        fs.appendFileSync(logFile, detail);
+        
+        const isValidationError = error.name === 'SequelizeUniqueConstraintError' || error.name === 'SequelizeValidationError';
+        return res.status(isValidationError ? 400 : 500).json({ 
+            message: error.message || "Failed to update equipment"
+        });
+    }
+};
+
+const uploadFile = async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+        
+        const filename = req.file.originalname;
+        const safeFilename = `${Date.now()}_${filename.replace(/[^a-z0-9.]/gi, '_')}`;
+
+        let uploadResult;
+        try {
+            uploadResult = await uploadStream(req.file.buffer, {
+                folder: 'sims/equipment',
+                resource_type: 'auto',
+                public_id: safeFilename.replace(/\.[^/.]+$/, "")
+            });
+        } catch (err) {
+            console.warn('[equipment-service] Cloudinary upload failed. Falling back to local storage.');
+            const uploadDir = path.join(__dirname, '../../public/uploads/equipment');
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            const filePath = path.join(uploadDir, safeFilename);
+            fs.writeFileSync(filePath, req.file.buffer);
+            
+            uploadResult = {
+                secure_url: `/uploads/equipment/${safeFilename}`,
+                format: safeFilename.split('.').pop() || 'jpg'
+            };
+        }
+
         return res.status(200).json({
-            message: "Equipment updated successfully",
-            equipment: serializeEquipmentWithPreview(updatedEquipment)
+            message: 'File uploaded successfully',
+            url: uploadResult.secure_url,
+            format: uploadResult.format
         });
     } catch (error) {
-        if (isPersistenceError(error)) {
-            return res.status(400).json({ message: error.errors?.[0]?.message || error.message });
-        }
-        console.error("Error updating equipment:", error);
-        return handleEquipmentPersistenceError(res, error)
-            || res.status(500).json({ message: "Internal Server Error" });
+        console.error("Upload error:", error);
+        return res.status(500).json({ message: "Upload failed" });
     }
 };
 
@@ -293,5 +236,6 @@ module.exports = {
     deleteEquipment,
     createEquipment,
     updateEquipment,
-    uploadMedia
+    uploadMedia,
+    uploadFile
 };

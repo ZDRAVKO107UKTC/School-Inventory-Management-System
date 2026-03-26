@@ -19,21 +19,26 @@ const isEmailConfigured = () => {
 };
 
 const createTransporter = () => {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 587);
+  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+
   if (!isEmailEnabled()) {
     return nodemailer.createTransport({ jsonTransport: true });
   }
 
-  if (process.env.SMTP_HOST) {
+  if (host) {
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: process.env.SMTP_USER
-        ? {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
-          }
-        : undefined
+      host: host,
+      port: port,
+      secure: secure,
+      auth: process.env.SMTP_USER ? {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      } : undefined,
+      tls: {
+        rejectUnauthorized: false
+      }
     });
   }
 
@@ -49,19 +54,27 @@ const getTransporter = () => {
 };
 
 const sendEmail = async ({ to, subject, text, html }) => {
-  const info = await getTransporter().sendMail({
-    from: getFromAddress(),
-    to,
-    subject,
-    text,
-    html
-  });
+  console.log(`[email-service] Attempting to send email to: ${to}`);
+  try {
+    const info = await getTransporter().sendMail({
+      from: getFromAddress(),
+      to,
+      subject,
+      text,
+      html
+    });
 
-  if (info.message) {
-    console.log('[email-service] message payload:', info.message.toString());
+    if (info.message) {
+      console.log('[email-service] JSON message payload captured.');
+    } else {
+      console.log('[email-service] Email sent successfully via SMTP. Message ID:', info.messageId);
+    }
+
+    return info;
+  } catch (error) {
+    console.error('[email-service] Error sending email:', error);
+    throw error;
   }
-
-  return info;
 };
 
 module.exports = {

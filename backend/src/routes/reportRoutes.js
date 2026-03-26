@@ -67,6 +67,7 @@ router.get('/history', authenticateToken, authorizeRoles('admin'), reportControl
 router.get('/export', authenticateToken, authorizeRoles('admin'), reportController.exportReport);
 router.get('/integrations/status', authenticateToken, authorizeRoles('admin'), reportController.getIntegrationStatus);
 router.post('/export/google-sheets', authenticateToken, authorizeRoles('admin'), validateGoogleSheetsExport, handleValidation, reportController.exportReportToGoogleSheets);
+router.post('/export/sheets', authenticateToken, authorizeRoles('admin'), reportController.exportToGoogleSheets);
 router.get('/notifications/summary', authenticateToken, authorizeRoles('admin'), reportController.getNotificationSummary);
 router.post('/notifications/run', authenticateToken, authorizeRoles('admin'), reportController.runNotificationCycle);
 

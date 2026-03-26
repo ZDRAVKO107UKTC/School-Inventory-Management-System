@@ -1,4 +1,4 @@
-import { apiRequest } from '@/services/apiClient';
+import { apiRequest, buildApiUrl } from '@/services/apiClient';
 import type { ApiResult, Equipment } from '@/types/auth';
 
 export interface EquipmentFilters {
@@ -54,9 +54,32 @@ export const updateEquipmentStatus = async (
     body: { status },
   });
 };
-export const getConditionHistory = async (token: string, equipmentId: number): Promise<ApiResult<any[]>> => {
-  return apiRequest<any[]>(`/equipment/${equipmentId}/condition-history`, {
-    method: 'GET',
-    token,
-  });
+
+export const uploadEquipmentFile = async (token: string, file: File): Promise<ApiResult<{ url: string; format: string; type: string }>> => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch(buildApiUrl('/equipment/upload'), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    
+    // We try to parse json response since we know backend returns json layout: { message, url, format, type }
+    const data = await res.json().catch(() => ({}));
+    
+    if (!res.ok) {
+      return { success: false, error: data.message || `Upload failed with status ${res.status}` };
+    }
+    return { success: true, data, message: data.message };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network request failed' };
+  }
+};
+
+export const getEquipmentConditionHistory = async (token: string, equipmentId: number): Promise<ApiResult<any[]>> => {
+  return apiRequest<any[]>(`/equipment/${equipmentId}/condition-history`, { token });
 };

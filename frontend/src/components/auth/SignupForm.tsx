@@ -27,6 +27,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({
   isLoading = false,
   error,
 }) => {
+
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

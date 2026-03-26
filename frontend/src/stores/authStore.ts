@@ -23,6 +23,7 @@ export interface AuthStore {
   completeOAuthSession: (session: { accessToken: string; user: User }) => void;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (username: string, email: string, password: string) => Promise<boolean>;
+  forgotPassword: (email: string) => Promise<boolean>;
   hydrateSession: () => Promise<void>;
   logout: () => Promise<void>;
   resetAuthState: () => void;
@@ -130,6 +131,24 @@ export const useAuthStore = create<AuthStore>((set) => ({
       isAuthenticated: true,
       token: result.data.accessToken,
       user: result.data.user,
+      error: null,
+      showForgotPassword: false,
+    });
+    return true;
+  },
+
+  forgotPassword: async (email) => {
+    set({ isLoading: true, error: null });
+    const authService = getAuthService();
+    const result = await authService.requestPasswordReset({ email });
+
+    if (!result.success) {
+      set({ isLoading: false, error: result.error || 'Password reset request failed' });
+      return false;
+    }
+
+    set({
+      isLoading: false,
       error: null,
       showForgotPassword: false,
     });

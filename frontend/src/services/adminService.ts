@@ -24,6 +24,7 @@ export interface AdminCreateEquipmentPayload {
   quantity: number;
   serial_number?: string;
   location?: string;
+  room_id?: number | null;
   photo_url?: string;
 }
 
@@ -157,6 +158,32 @@ export const updateEquipmentAsAdmin = async (
     method: 'PUT',
     token,
     body: payload,
+  });
+};
+
+export const unassignUserFromRoom = async (token: string, userId: number, roomId: number): Promise<ApiResult<{ message: string }>> => {
+  return apiRequest<{ message: string }>(`/spatial/users/${userId}/rooms/${roomId}`, {
+    method: 'DELETE',
+    token,
+  });
+};
+
+export const assignUserToRoom = async (
+  token: string,
+  userId: number,
+  roomId: number,
+): Promise<ApiResult<{ assignment: any; created: boolean }>> => {
+  return apiRequest<{ assignment: any; created: boolean }>('/spatial/users/assign', {
+    method: 'POST',
+    token,
+    body: { user_id: userId, room_id: roomId },
+  });
+};
+
+export const getUserRooms = async (token: string, userId: number): Promise<ApiResult<{ assignedRooms: any[] }>> => {
+  return apiRequest<{ assignedRooms: any[] }>(`/spatial/users/${userId}/rooms`, {
+    method: 'GET',
+    token,
   });
 };
 

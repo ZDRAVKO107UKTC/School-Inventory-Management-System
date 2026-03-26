@@ -36,6 +36,11 @@ const getAllEquipment = async (filters, pagination = null) => {
 
     const queryOptions = {
         where: whereClause,
+        include: [{
+            model: Room,
+            as: 'room',
+            attributes: ['id', 'name']
+        }],
         attributes: [
             'id',
             'name',

@@ -34,6 +34,11 @@ module.exports = (sequelize, DataTypes) => {
     height: {
       type: DataTypes.INTEGER,
       allowNull: true
+    },
+    type: {
+      type: DataTypes.ENUM('active', 'inactive', 'storage'),
+      allowNull: false,
+      defaultValue: 'active'
     }
   }, {
     tableName: 'rooms',
@@ -51,6 +56,13 @@ module.exports = (sequelize, DataTypes) => {
     Room.hasMany(models.Equipment, {
       foreignKey: 'room_id',
       as: 'equipment'
+    });
+
+    Room.belongsToMany(models.User, {
+      through: models.UserRoom,
+      foreignKey: 'room_id',
+      otherKey: 'user_id',
+      as: 'assignedUsers'
     });
   };
 

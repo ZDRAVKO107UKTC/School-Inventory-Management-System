@@ -40,6 +40,11 @@ export interface PasswordResetRequest {
   email: string;
 }
 
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+}
+
 export interface Equipment {
   id: number;
   name: string;

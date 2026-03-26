@@ -18,34 +18,45 @@ export const Virtual3DModel: React.FC<Props> = ({
 
   const colors = useMemo(() => {
     if (normalizedType.includes('laptop') || normalizedType.includes('macbook')) {
-      return {
-        primary: '#e3e3e3',
-        secondary: '#8e8e93',
-        accent: '#1d1d1f'
-      };
+      return { primary: '#e3e3e3', secondary: '#8e8e93', accent: '#1d1d1f', glow: 'rgba(0,122,255,0.3)' };
     }
     if (normalizedType.includes('projector')) {
-      return {
-        primary: '#f5f5f7',
-        secondary: '#d2d2d7',
-        accent: '#000000'
-      };
+      return { primary: '#f5f5f7', secondary: '#d2d2d7', accent: '#000000', glow: 'rgba(255,255,255,0.5)' };
     }
     if (normalizedType.includes('tablet') || normalizedType.includes('ipad')) {
-      return {
-        primary: '#323232',
-        secondary: '#1d1d1f',
-        accent: '#8e8e93'
-      };
+      return { primary: '#1d1d1f', secondary: '#3a3a3c', accent: '#007aff', glow: 'rgba(0,122,255,0.4)' };
     }
-    return {
-      primary: '#f5f5f7',
-      secondary: '#8e8e93',
-      accent: '#1d1d1f'
-    };
+    if (normalizedType.includes('computer') || normalizedType.includes('desktop')) {
+      return { primary: '#3a3a3c', secondary: '#1c1c1e', accent: '#5e5ce6', glow: 'rgba(94,92,230,0.4)' };
+    }
+    if (normalizedType.includes('camera')) {
+       return { primary: '#2c2c2e', secondary: '#1c1c1e', accent: '#ff3b30', glow: 'rgba(255,59,48,0.3)' };
+    }
+    if (normalizedType.includes('access') || normalizedType.includes('cable') || normalizedType.includes('charger')) {
+       return { primary: '#ffffff', secondary: '#f5f5f7', accent: '#8e8e93', glow: 'rgba(142,142,147,0.2)' };
+    }
+    return { primary: '#f5f5f7', secondary: '#8e8e93', accent: '#1d1d1f', glow: 'rgba(0,0,0,0.1)' };
   }, [normalizedType]);
 
   const renderModel = () => {
+    if (normalizedType.includes('computer')) {
+      return (
+        <div className="relative w-full h-full flex items-center justify-center" style={{ transformStyle: 'preserve-3d' }}>
+          {/* Monitor */}
+          <div className="w-48 h-32 rounded-xl border-4 shadow-2xl relative flex items-center justify-center" style={{ backgroundColor: colors.secondary, borderColor: colors.primary, transformStyle: 'preserve-3d' }}>
+            <div className="absolute inset-2 rounded-lg bg-gradient-to-br from-indigo-500/10 via-slate-900 to-black overflow-hidden">
+              <div className="w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(0,122,255,0.1),transparent)]" />
+              <div className="absolute bottom-2 left-2 right-2 h-0.5 bg-indigo-500/20" />
+            </div>
+            {/* Stand */}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-8 h-8" style={{ backgroundColor: colors.primary, transform: 'rotateX(-20deg)' }}>
+              <div className="absolute -bottom-2 -left-4 w-16 h-2 rounded-full" style={{ backgroundColor: colors.primary }} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     if (normalizedType.includes('laptop') || normalizedType.includes('macbook')) {
       return (
         <div className="relative w-full h-full flex items-center justify-center" style={{ transformStyle: 'preserve-3d' }}>
@@ -85,13 +96,56 @@ export const Virtual3DModel: React.FC<Props> = ({
       );
     }
 
+    if (normalizedType.includes('tablet') || normalizedType.includes('ipad') || normalizedType.includes('phone')) {
+      return (
+        <div className="relative w-full h-full flex items-center justify-center" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="w-32 h-44 rounded-2xl border-[3px] shadow-2xl relative" style={{ backgroundColor: colors.primary, borderColor: colors.secondary, transformStyle: 'preserve-3d' }}>
+            <div className="absolute inset-1 rounded-xl bg-black overflow-hidden">
+               <div className="w-full h-full bg-gradient-to-tr from-blue-600/20 via-transparent to-purple-600/20 animate-pulse" />
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-white/10" />
+            </div>
+            {/* Camera */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-slate-800" />
+            <div className="absolute inset-0 rounded-2xl" style={{ backgroundColor: colors.secondary, transform: 'translateZ(-4px)' }} />
+          </div>
+        </div>
+      );
+    }
+
+    if (normalizedType.includes('access') || normalizedType.includes('cable') || normalizedType.includes('charger')) {
+        return (
+          <div className="relative w-full h-full flex items-center justify-center" style={{ transformStyle: 'preserve-3d' }}>
+            <div className="w-16 h-16 rounded-xl shadow-xl relative" style={{ backgroundColor: colors.primary, transformStyle: 'preserve-3d' }}>
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-2 h-12 bg-slate-300 rounded-full" />
+              <div className="absolute inset-0 rounded-xl" style={{ backgroundColor: colors.secondary, transform: 'translateZ(-8px)' }} />
+            </div>
+          </div>
+        );
+    }
+
+    if (normalizedType.includes('camera')) {
+        return (
+          <div className="relative w-full h-full flex items-center justify-center" style={{ transformStyle: 'preserve-3d' }}>
+            <div className="w-32 h-20 rounded-lg shadow-2xl relative" style={{ backgroundColor: colors.primary, transformStyle: 'preserve-3d' }}>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full border-4 shadow-inner" style={{ backgroundColor: '#1c1c1e', borderColor: colors.secondary }}>
+                 <div className="absolute inset-2 rounded-full bg-gradient-to-br from-blue-500/40 to-black" />
+              </div>
+              <div className="absolute -top-2 left-4 w-8 h-2 bg-red-600 rounded-sm" />
+              <div className="absolute inset-0 rounded-lg" style={{ backgroundColor: colors.secondary, transform: 'translateZ(-12px)' }} />
+            </div>
+          </div>
+        );
+    }
+
     return (
       <div className="relative w-full h-full flex items-center justify-center" style={{ transformStyle: 'preserve-3d' }}>
-        <div className="w-36 h-48 rounded-2xl border-4 shadow-2xl relative" style={{ backgroundColor: colors.accent, borderColor: colors.primary, transformStyle: 'preserve-3d' }}>
-          <div className="absolute inset-2 rounded-xl overflow-hidden" style={{ backgroundColor: colors.secondary }}>
-            <div className="w-full h-full bg-gradient-to-tr from-cyan-500/10 to-transparent" />
+        <div className="w-32 h-32 rounded-lg shadow-2xl relative border-2" style={{ backgroundColor: colors.primary, borderColor: colors.secondary, transformStyle: 'preserve-3d' }}>
+          <div className="absolute inset-0 flex items-center justify-center opacity-20">
+             <div className="w-12 h-12 border-2 border-slate-400 rotate-45" />
           </div>
-          <div className="absolute inset-0 rounded-2xl" style={{ backgroundColor: colors.primary, transform: 'translateZ(-2px)' }} />
+          <div className="absolute inset-0 rounded-lg" style={{ backgroundColor: colors.secondary, transform: 'translateZ(-20px)' }} />
+          <div className="absolute h-full w-20" style={{ right: -10, backgroundColor: colors.primary, transform: 'rotateY(90deg) translateZ(10px)' }} />
+          <div className="absolute w-full h-20" style={{ bottom: -10, backgroundColor: colors.secondary, transform: 'rotateX(90deg) translateZ(10px)' }} />
         </div>
       </div>
     );

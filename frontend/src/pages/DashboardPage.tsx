@@ -1,14 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Menu, Search, LogOut, Package, History, CalendarClock, Building, ChevronDown, Plus, Trash2, X, Download, ListTodo, Square, MinusCircle, Edit, CheckCircle2, ArchiveX, XCircle, FileJson } from 'lucide-react';
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Menu, Search, LogOut, Package, History, CalendarClock, Building, ChevronDown, Plus, Trash2, X, Download, ListTodo, Square, MinusCircle, Edit, CheckCircle2, ArchiveX, XCircle, FileJson, MousePointer2, LayoutPanelLeft, PenTool, MapPin, Archive, Clock, FileSpreadsheet, Loader2, ScanLine, QrCode, ClipboardCheck, Info, BarChart3, Bell } from 'lucide-react';
+import QRCode from 'react-qr-code';
 import { ThemeToggle } from '@/components/auth/ThemeToggle';
 import { InteractiveBackground } from '@/components/auth/InteractiveBackground';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuthStore } from '@/stores/authStore';
-import { getEquipmentList, getConditionHistory } from '@/services/inventoryService';
+import { getEquipmentList, getEquipmentConditionHistory } from '@/services/inventoryService';
+import { BarcodeModal } from '@/components/ui/BarcodeModal';
+import { ConditionHistoryModal } from '@/components/ui/ConditionHistoryModal';
+import { BarcodeScannerModal } from '@/components/ui/BarcodeScannerModal';
+import { FileUploader } from '@/components/ui/FileUploader';
+import { DocumentPreview } from '@/components/ui/DocumentPreview';
+import { GlobalDocuments } from '@/components/dashboard/GlobalDocuments';
+import { NotificationPreferences } from '@/components/dashboard/NotificationPreferences';
 import {
   getMyRequests,
   submitBorrowRequest,
@@ -19,7 +27,7 @@ import {
   rejectRequest
 } from '../services/requestService';
 import { getFloors, createFloor, deleteFloor, updateFloor, deleteRoom, updateRoom, assignEquipmentToRoom, Floor, Room } from '@/services/spatialService';
-import { getUsageReport, getFullHistoryReport, downloadHistoryCSV, resetSystemHistory } from '@/services/reportService';
+import { getUsageReport, getFullHistoryReport, downloadHistoryCSV, resetSystemHistory, exportToGoogleSheets } from '@/services/reportService';
 import {
   getUsersAsAdmin,
   createEquipmentAsAdmin,
@@ -29,7 +37,10 @@ import {
   updateEquipmentAsAdmin,
   updateUserAsAdmin,
   getAdminEquipmentHistory,
-  getAdminUserHistory
+  getAdminUserHistory,
+  assignUserToRoom,
+  unassignUserFromRoom,
+  getUserRooms
 } from '@/services/adminService';
 import type { BorrowRequest, Equipment, User } from '@/types/auth';
 import { ParallaxCarousel } from '@/components/ui/ParallaxCarousel';
@@ -50,6 +61,27 @@ const fallbackUsageData = [
   { name: 'Projector XYZ', borrowCount: 8 },
   { name: 'Tablet Gen 5', borrowCount: 5 },
 ];
+
+const VECTOR_UI_OPTIONS = [
+  { id: 'laptop', label: 'Laptop', icon: '💻' },
+  { id: 'computer', label: 'Computer', icon: '🖥️' },
+  { id: 'projector', label: 'Projector', icon: '📽️' },
+  { id: 'tablet', label: 'Tablet', icon: '📱' },
+  { id: 'phone', label: 'Phone', icon: '🤳' },
+  { id: 'camera', label: 'Camera', icon: '📷' },
+  { id: 'cable', label: 'Accessory', icon: '🔌' },
+  { id: 'generic', label: 'Other', icon: '📦' },
+];
+
+const parsePhotos = (url: string | null): string[] => {
+  if (!url) return [];
+  try {
+    const parsed = JSON.parse(url);
+    return Array.isArray(parsed) ? parsed : [url];
+  } catch {
+    return url ? [url] : [];
+  }
+};
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -82,12 +114,12 @@ const DashboardPage: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAllUnits, setShowAllUnits] = useState(false);
-  const [mgmtTab, setMgmtTab] = useState<'spatial' | 'approvals' | 'system' | 'reports'>('spatial');
+  const [mgmtTab, setMgmtTab] = useState<'spatial' | 'approvals' | 'system' | 'reports' | 'storage' | 'notifications'>('spatial');
   const [reportData, setReportData] = useState<{ usage: any[]; history: any[] }>({ usage: [], history: [] });
-  const [systemSubTab, setSystemSubTab] = useState<'assets' | 'users' | 'directory'>('assets');
+  const [systemSubTab, setSystemSubTab] = useState<'assets' | 'users' | 'directory' | 'vault'>('assets');
 
   // Admin System State
-  const [newEquipment, setNewEquipment] = useState({ name: '', type: '', condition: 'good' as any, quantity: 1 });
+  const [newEquipment, setNewEquipment] = useState({ name: '', type: 'laptop', condition: 'good' as any, quantity: 1, serial_number: '', room_id: null as number | null, is_sensitive: false });
   const [newUser, setNewUser] = useState({ username: '', email: '', password: '', role: 'student' as any });
   const [mgmSearch, setMgmSearch] = useState('');
 
@@ -100,8 +132,20 @@ const DashboardPage: React.FC = () => {
   const [isDeleteFloorModalOpen, setIsDeleteFloorModalOpen] = useState(false);
   const [floorToDeleteId, setFloorToDeleteId] = useState<number | null>(null);
   const [isResetHistoryModalOpen, setIsResetHistoryModalOpen] = useState(false);
+  const [isExportingSheets, setIsExportingSheets] = useState(false);
   const [conditionHistoryModal, setConditionHistoryModal] = useState<{ id: number; name: string } | null>(null);
   const [historyModal, setHistoryModal] = useState<{ type: 'user' | 'equipment', id: number, title: string } | null>(null);
+  const [userRoomModal, setUserRoomModal] = useState<{ user: User, rooms: any[] } | null>(null);
+  const [teacherRoomIds, setTeacherRoomIds] = useState<number[]>([]);
+  const [barcodeModal, setBarcodeModal] = useState<{ name: string; serial: string } | null>(null);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [showClaimPreview, setShowClaimPreview] = useState(false);
+  const [showRegisterPreview, setShowRegisterPreview] = useState(false);
+  const [conditionHistoryOpen, setConditionHistoryOpen] = useState<{ id: number; name: string } | null>(null);
+
+  const [newPhotoUrls, setNewPhotoUrls] = useState<string[]>([]);
+  const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([]);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -134,6 +178,12 @@ const DashboardPage: React.FC = () => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
+  useEffect(() => {
+    if (mapMode === 'draw') {
+      setShowAllUnits(false);
+    }
+  }, [mapMode]);
+
   const fetchData = async () => {
     if (!token) return;
     try {
@@ -145,6 +195,13 @@ const DashboardPage: React.FC = () => {
 
       const reqResult = await getMyRequests(token);
       if (reqResult.success) setRequests(reqResult.data || []);
+
+      if (isTeacher) {
+        const trRes = await getUserRooms(token, user!.id);
+        if (trRes.success && trRes.data) {
+          setTeacherRoomIds(trRes.data.assignedRooms.map((r: any) => r.id));
+        }
+      }
 
       const floorResult = await getFloors(token);
       if (floorResult.success && floorResult.data) {
@@ -170,11 +227,11 @@ const DashboardPage: React.FC = () => {
             setReportData(prev => ({ ...prev, usage: (usageResult.data as any).data || [] }));
           }
 
-          getFullHistoryReport(token).then(histRes => {
-            if (histRes.success && histRes.data) {
+          const timeout = (ms: number) => new Promise<null>(resolve => setTimeout(() => resolve(null), ms));
+          const histRes = await Promise.race([getFullHistoryReport(token), timeout(10000)]);
+          if (histRes && histRes.success && histRes.data) {
               setReportData(prev => ({ ...prev, history: (histRes.data as any).data || [] }));
-            }
-          });
+          }
           if (usersResult.success && usersResult.data) {
             setUsers(usersResult.data.users);
           }
@@ -196,7 +253,8 @@ const DashboardPage: React.FC = () => {
       quantity: Number(editEquipmentModal.quantity),
       serial_number: editEquipmentModal.serial_number || undefined,
       location: editEquipmentModal.location || undefined,
-      photo_url: editEquipmentModal.photo_url || undefined,
+      room_id: editEquipmentModal.room_id || null,
+      photo_url: editPhotoUrls.length > 0 ? JSON.stringify(editPhotoUrls) : '',
     });
     if (res.success) {
       setEditEquipmentModal(null);
@@ -237,6 +295,35 @@ const DashboardPage: React.FC = () => {
 
   const onDownloadCSV = () => {
     if (token) downloadHistoryCSV(token);
+  };
+
+  const onExportToSheets = async () => {
+    if (!token) return;
+    setIsExportingSheets(true);
+    const res = await exportToGoogleSheets(token);
+    setIsExportingSheets(false);
+    if (res.success && res.data?.url) {
+      if (res.data.url.includes('mock-sheet-url')) {
+        setConfirmDialog({
+        title: "Backup Initialized",
+        message: "The UI works, but no real Google Sheet was created because the Google Cloud credentials aren't set in the backend .env file yet.\n\nMock Backup Successful!",
+        confirmText: "Understood",
+        variant: "primary",
+        onConfirm: () => setConfirmDialog(null)
+      });
+      } else {
+        window.open(res.data.url, '_blank');
+      }
+      setMessage(res.data.message || 'Backup created successfully');
+      setTimeout(() => setMessage(null), 3000);
+    } else {
+      setConfirmDialog({
+        title: "Backup Failed",
+        message: res.error || "Failed to create Google Sheets backup. Make sure server credentials are set in the backend .env file.",
+        confirmText: "Back",
+        onConfirm: () => setConfirmDialog(null)
+      });
+    }
   };
 
   const handleResetHistory = async () => {
@@ -441,7 +528,20 @@ const DashboardPage: React.FC = () => {
         return matchesSearch && Number(e.room_id) === Number(selectedRoomId);
       }
 
-      if (!showAllUnits && currentFloorId) {
+      if (showAllUnits) {
+        return matchesSearch;
+      }
+
+      if (mgmtTab === 'storage') {
+        const storageRoomIds = floors.flatMap(f => f.rooms).filter(r => r.type === 'storage').map(r => r.id);
+        return matchesSearch && e.room_id !== null && storageRoomIds.includes(Number(e.room_id));
+      }
+
+      if (isTeacher) {
+        return matchesSearch && e.room_id !== null && teacherRoomIds.includes(Number(e.room_id));
+      }
+
+      if (currentFloorId) {
         const floorRooms = floors.find(f => f.id === currentFloorId)?.rooms.map(r => r.id) || [];
         return matchesSearch && e.room_id !== null && floorRooms.includes(Number(e.room_id));
       }
@@ -454,7 +554,7 @@ const DashboardPage: React.FC = () => {
     filteredEquipment.forEach(item => {
       const key = `${item.name}-${item.type}`;
       if (!groups[key]) {
-        groups[key] = { ...item, totalQuantity: 0, availableQuantity: 0, all_items: [] };
+        groups[key] = { ...item, totalQuantity: 0, availableQuantity: 0, all_items: [], rooms: [] as string[] };
       }
       groups[key].totalQuantity += 1;
       const isRequestedByMe = requests.some(r => r.equipment_id === item.id && r.status === 'pending');
@@ -463,6 +563,9 @@ const DashboardPage: React.FC = () => {
         groups[key].id = item.id;
       }
       groups[key].all_items.push(item);
+      if (item.room?.name && !groups[key].rooms.includes(item.room.name)) {
+        groups[key].rooms.push(item.room.name);
+      }
     });
     return Object.values(groups) as GroupedEquipment[];
   }, [equipment, requests, selectedRoomId, showAllUnits, floors, currentFloorId, searchTerm]);
@@ -480,7 +583,7 @@ const DashboardPage: React.FC = () => {
     const due = new Date(now);
     due.setDate(now.getDate() + 7);
 
-    const result = await submitBorrowRequest(token, {
+    const _result = await submitBorrowRequest(token, {
       equipment_id: equipmentId,
       quantity: 1,
       request_date: now.toISOString(),
@@ -488,7 +591,7 @@ const DashboardPage: React.FC = () => {
       notes: 'Requested from spatial dashboard',
     });
     try {
-      const result = await submitBorrowRequest(token, {
+      const _result = await submitBorrowRequest(token, {
         equipment_id: equipmentId,
         quantity: 1,
         request_date: now.toISOString(),
@@ -496,14 +599,14 @@ const DashboardPage: React.FC = () => {
         notes: 'Requested from spatial dashboard',
       });
 
-      if (result.success) {
+      if (_result.success) {
         setMessage('Request submitted');
         setTimeout(() => setMessage(null), 3000);
         await fetchData();
         return true;
       }
 
-      setError(result.error || 'Borrow request failed');
+      setError(_result.error || 'Borrow request failed');
       return false;
     } finally {
       setIsSubmittingClaim(false);
@@ -512,20 +615,20 @@ const DashboardPage: React.FC = () => {
 
   const onReturn = async (requestId: number, condition: 'new' | 'good' | 'fair' | 'damaged' = 'good', notes?: string) => {
     if (!token) return;
-    const result = await returnBorrowRequest(token, requestId, { condition, notes: notes || 'Returned by user' });
-    if (result.success) fetchData();
-    else setError(result.error || 'Return failed');
+    const _result = await returnBorrowRequest(token, requestId, { condition, notes: notes || 'Returned by user' });
+    if (_result.success) fetchData();
+    else setError(_result.error || 'Return failed');
   };
 
   const performDelete = async (requestId: number) => {
     if (!token) return;
-    const result = await deleteBorrowRequest(token, requestId);
-    if (result.success) {
+    const _result = await deleteBorrowRequest(token, requestId);
+    if (_result.success) {
       fetchData();
       setMessage('Request dismissed');
       setTimeout(() => setMessage(null), 3000);
     } else {
-      setError(result.error || 'Failed to dismiss request');
+      setError(_result.error || 'Failed to dismiss request');
       setTimeout(() => setError(null), 5000);
     }
   };
@@ -544,7 +647,8 @@ const DashboardPage: React.FC = () => {
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Management</h2>
         </div>
         <div className="flex bg-[#f5f5f7] dark:bg-[#1d1d1f] p-1 rounded-xl border border-[#d2d2d7] dark:border-[#303030] shrink-0">
-          <button onClick={() => setViewMode('3d')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === '3d' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#1d1d1f] dark:text-[#f5f5f7]' : 'text-[#86868b]'}`}>3D View</button>
+          <button onClick={() => { setViewMode('3d'); setShowAllUnits(false); }} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === '3d' && !showAllUnits ? 'bg-white dark:bg-[#303030] shadow-sm text-[#1d1d1f] dark:text-[#f5f5f7]' : 'text-[#86868b]'}`}>{isTeacher ? 'My Rooms' : '3D View'}</button>
+          <button onClick={() => { setViewMode('3d'); setShowAllUnits(true); }} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === '3d' && showAllUnits ? 'bg-white dark:bg-[#303030] shadow-sm text-[#1d1d1f] dark:text-[#f5f5f7]' : 'text-[#86868b]'}`}>See All</button>
           <button onClick={() => setViewMode('map')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === 'map' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#1d1d1f] dark:text-[#f5f5f7]' : 'text-[#86868b]'}`}>Map View</button>
         </div>
 
@@ -554,17 +658,35 @@ const DashboardPage: React.FC = () => {
           <StatPill icon={<CalendarClock size={16} />} label="Queue status" value={requests ? requests.filter(r => r.status === 'pending').length : 0} color="bg-amber-500" />
         </div>
 
-        <div className="flex p-1 bg-[#f5f5f7] dark:bg-[#1d1d1f] rounded-xl border border-[#d2d2d7] dark:border-[#303030]">
-          <button onClick={() => setMgmtTab('spatial')} className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${mgmtTab === 'spatial' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#0066cc]' : 'text-[#86868b]'}`}>Spatial</button>
-          <button onClick={() => setMgmtTab('approvals')} className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${mgmtTab === 'approvals' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#0066cc]' : 'text-[#86868b]'}`}>Approvals</button>
-          <button onClick={() => setMgmtTab('reports')} className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${mgmtTab === 'reports' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#0066cc]' : 'text-[#86868b]'}`}>Reports</button>
-          {isAdmin && <button onClick={() => setMgmtTab('system')} className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${mgmtTab === 'system' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#0066cc]' : 'text-[#86868b]'}`}>Global</button>}
+        <div className="flex flex-wrap gap-2 p-2 bg-[#f5f5f7] dark:bg-[#1d1d1f] rounded-2xl border border-[#d2d2d7] dark:border-[#303030] shadow-sm mb-4">
+          <button onClick={() => setMgmtTab('spatial')} className={`flex-1 min-w-[75px] py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${mgmtTab === 'spatial' ? 'bg-white dark:bg-[#303030] shadow-md text-[#0066cc]' : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white'}`}>Spatial</button>
+          <button onClick={() => setMgmtTab('approvals')} className={`flex-1 min-w-[75px] py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${mgmtTab === 'approvals' ? 'bg-white dark:bg-[#303030] shadow-md text-[#0066cc]' : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white'}`}>Approvals</button>
+          <button onClick={() => setMgmtTab('storage')} className={`flex-1 min-w-[75px] py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${mgmtTab === 'storage' ? 'bg-white dark:bg-[#303030] shadow-md text-[#0066cc]' : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white'}`}>Storage</button>
+          <button onClick={() => setMgmtTab('reports')} className={`flex-1 min-w-[75px] py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${mgmtTab === 'reports' ? 'bg-white dark:bg-[#303030] shadow-md text-[#0066cc]' : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white'}`}>Reports</button>
+          <button onClick={() => setMgmtTab('notifications')} className={`flex-1 min-w-[75px] py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${mgmtTab === 'notifications' ? 'bg-white dark:bg-[#303030] shadow-md text-[#0066cc]' : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white'}`}>Alerts</button>
+          {isAdmin && <button onClick={() => setMgmtTab('system')} className={`flex-1 min-w-[75px] py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${mgmtTab === 'system' ? 'bg-white dark:bg-[#303030] shadow-md text-[#0066cc]' : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white'}`}>Global</button>}
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6">
         {mgmtTab === 'spatial' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
+            {isAdmin && (
+              <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner">
+                <button
+                  onClick={() => setMapMode('select')}
+                  className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${mapMode === 'select' ? 'bg-white dark:bg-slate-700 shadow-md text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  <MousePointer2 size={14} /> Selector
+                </button>
+                <button
+                  onClick={() => setMapMode('draw')}
+                  className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${mapMode === 'draw' ? 'bg-indigo-500 shadow-lg text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  <PenTool size={14} /> Vector Drawing
+                </button>
+              </div>
+            )}
 
             <div className="space-y-2">
               {floors.map(floor => (
@@ -600,7 +722,7 @@ const DashboardPage: React.FC = () => {
                   <p className="text-[10px] uppercase font-black tracking-widest text-[#86868b]">Active Zone</p>
                   <div className="flex gap-2">
                     <span className="px-2 py-0.5 bg-[#0066cc]/10 text-[#0066cc] rounded-full text-[9px] font-black uppercase flex items-center gap-2">
-                      {currentFloor?.rooms.find(r => r.id === selectedRoomId)?.name}
+                      {currentFloor?.rooms.find(r => r.id === selectedRoomId)?.name} ({currentFloor?.rooms.find(r => r.id === selectedRoomId)?.type === 'storage' ? 'Storage' : 'Regular'})
                       <button onClick={() => setEditRoomModal(currentFloor?.rooms.find(r => r.id === selectedRoomId) || null)} className="hover:scale-110"><Edit size={10} /></button>
                     </span>
                     {isAdmin && (
@@ -630,10 +752,14 @@ const DashboardPage: React.FC = () => {
 
                 <div className="pt-2 border-t border-[#f5f5f7] dark:border-[#303030]">
                   <button
+                    disabled={selectedRoomId ? currentFloor?.rooms.find(r => r.id === selectedRoomId)?.type === 'inactive' : true}
                     onClick={() => setIsAssigningMode(!isAssigningMode)}
-                    className={`w-full py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-wider transition-all ${isAssigningMode ? 'bg-[#1d1d1f] text-white dark:bg-[#f5f5f7] dark:text-[#1d1d1f]' : 'bg-white dark:bg-[#2c2c2e] text-[#1d1d1f] dark:text-[#f5f5f7] border border-[#d2d2d7] dark:border-[#303030] shadow-sm'}`}
+                    className={`w-full py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-30 disabled:cursor-not-allowed ${isAssigningMode ? 'bg-[#1d1d1f] text-white dark:bg-[#f5f5f7] dark:text-[#1d1d1f]' : 'bg-white dark:bg-[#2c2c2e] text-[#1d1d1f] dark:text-[#f5f5f7] border border-[#d2d2d7] dark:border-[#303030] shadow-sm'}`}
                   >
-                    <Package size={14} /> {isAssigningMode ? 'Cancel Selection' : 'Assign Unit to Room'}
+                    <Package size={14} />
+                    {currentFloor?.rooms.find(r => r.id === selectedRoomId)?.type === 'inactive'
+                      ? 'Zone Restricted (Inactive)'
+                      : (isAssigningMode ? 'Cancel Selection' : 'Assign Unit to Room')}
                   </button>
 
                   <AnimatePresence>
@@ -680,10 +806,10 @@ const DashboardPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleApprove(request.id)} className="flex-1 py-2 bg-emerald-500/10 text-emerald-600 text-[9px] font-black uppercase rounded-lg hover:bg-emerald-500 hover:text-white transition-all">Approve</button>
-                    <button onClick={() => handleReject(request.id)} className="flex-1 py-2 bg-rose-500/10 text-rose-600 text-[9px] font-black uppercase rounded-lg hover:bg-rose-500 hover:text-white transition-all">Reject</button>
-                  </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleApprove(request.id)} className="flex-1 py-2.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[9px] font-black uppercase rounded-xl hover:bg-emerald-600 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20 transition-all active:scale-95 shadow-sm">Approve</button>
+                      <button onClick={() => handleReject(request.id)} className="flex-1 py-2.5 bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 text-[9px] font-black uppercase rounded-xl hover:bg-rose-600 hover:text-white hover:shadow-lg hover:shadow-rose-500/20 transition-all active:scale-95 shadow-sm">Reject</button>
+                    </div>
                 </div>
               ))
             )}
@@ -704,13 +830,76 @@ const DashboardPage: React.FC = () => {
             </section>
           </div>
         )}
+        {mgmtTab === 'storage' && (
+          <div className="space-y-4">
+            <p className="text-[10px] uppercase font-black tracking-widest text-[#86868b]">Stored Inventory</p>
+            {(() => {
+              const storageItems = equipment.filter(e => {
+                const room = floors.flatMap(f => f.rooms).find(r => r.id === Number(e.room_id));
+                return room?.type === 'storage';
+              });
+
+              if (storageItems.length === 0) {
+                return (
+                  <div className="p-10 rounded-3xl border-2 border-dashed border-[#d2d2d7] dark:border-[#303030] flex flex-col items-center justify-center opacity-40">
+                    <Archive size={32} className="mb-2" />
+                    <p className="text-[10px] font-bold uppercase tracking-wider">No stored units</p>
+                  </div>
+                );
+              }
+
+              return storageItems.map(item => {
+                const floor = floors.find(f => f.rooms.some(r => r.id === Number(item.room_id)));
+                const room = floor?.rooms.find(r => r.id === Number(item.room_id));
+
+                return (
+                  <div key={item.id} className="p-4 bg-white dark:bg-[#1d1d1f] rounded-2xl border border-[#d2d2d7] dark:border-[#303030] shadow-sm hover:shadow-md transition-all group">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="text-xs font-black uppercase truncate group-hover:text-[#0066cc] transition-colors">{item.name}</h4>
+                        <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-tighter">{item.serial_number || 'No Serial Tracking'}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (floor && room) {
+                            setCurrentFloorId(floor.id);
+                            setSelectedRoomId(room.id);
+                            setViewMode('map');
+                          }
+                        }}
+                        className="p-2 text-[#0066cc] bg-blue-100 dark:bg-blue-500/20 rounded-xl hover:scale-110 hover:shadow-md transition-all flex items-center justify-center shadow-sm"
+                        title="Locate on Map"
+                      >
+                        <MapPin size={14} />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-md text-[8px] font-black uppercase tracking-tighter">
+                        Floor: {floor?.name || 'N/A'}
+                      </span>
+                      <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-[#0066cc] rounded-md text-[8px] font-black uppercase tracking-tighter">
+                        Room: {room?.name || 'Unknown'} (Storage)
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter ${item.status === 'available' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                        {item.status}
+                      </span>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        )}
+
 
         {mgmtTab === 'system' && isAdmin && (
           <div className="space-y-6 pb-12">
             <div className="flex p-1 bg-[#f5f5f7] dark:bg-[#1d1d1f] rounded-xl border border-[#d2d2d7] dark:border-[#303030] mb-4">
               <button onClick={() => setSystemSubTab('assets')} className={`flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${systemSubTab === 'assets' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#0066cc]' : 'text-[#86868b]'}`}>Assets</button>
               <button onClick={() => setSystemSubTab('users')} className={`flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${systemSubTab === 'users' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#0066cc]' : 'text-[#86868b]'}`}>Users</button>
-              <button onClick={() => setSystemSubTab('directory')} className={`flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${systemSubTab === 'directory' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#0066cc]' : 'text-[#86868b]'}`}>Directory</button>
+              <button onClick={() => setSystemSubTab('directory')} className={`flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${systemSubTab === 'directory' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#0066cc]' : 'text-[#86868b]'}`}>Users List</button>
+              <button onClick={() => setSystemSubTab('vault')} className={`flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${systemSubTab === 'vault' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#0066cc]' : 'text-[#86868b]'}`}>Vault</button>
             </div>
 
             {systemSubTab === 'assets' && (
@@ -718,20 +907,130 @@ const DashboardPage: React.FC = () => {
                 <p className="text-[10px] uppercase font-black tracking-widest text-[#86868b]">Add Asset</p>
                 <div className="space-y-2 p-4 bg-[#f5f5f7] dark:bg-[#1d1d1f] rounded-2xl border border-[#d2d2d7] dark:border-[#303030]">
                   <Input className="text-[11px] h-10 rounded-xl bg-white dark:bg-[#2c2c2e]" placeholder="Equipment Name" value={newEquipment.name} onChange={e => setNewEquipment(p => ({ ...p, name: e.target.value }))} />
-                  <div className="flex gap-2">
-                    <Input className="flex-1 text-[11px] h-10 rounded-xl bg-white dark:bg-[#2c2c2e]" placeholder="Type" value={newEquipment.type} onChange={e => setNewEquipment(p => ({ ...p, type: e.target.value }))} />
-                    <Input className="w-20 text-[11px] h-10 rounded-xl bg-white dark:bg-[#2c2c2e]" type="number" value={newEquipment.quantity} onChange={e => setNewEquipment(p => ({ ...p, quantity: parseInt(e.target.value) || 1 }))} />
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input className="flex-1 text-[11px] h-10 rounded-xl bg-white dark:bg-[#2c2c2e]" placeholder="Serial Number (Optional)" value={newEquipment.serial_number || ''} onChange={e => setNewEquipment(p => ({ ...p, serial_number: e.target.value }))} />
+                    <Input className="w-full sm:w-20 text-[11px] h-10 rounded-xl bg-white dark:bg-[#2c2c2e]" type="number" placeholder="Qty" value={newEquipment.quantity} onChange={e => setNewEquipment(p => ({ ...p, quantity: parseInt(e.target.value) || 1 }))} />
                   </div>
-                  <Button className="w-full text-[9px] font-black py-4 uppercase tracking-widest bg-[#0066cc]" onClick={async () => {
-                    if (!token) return;
-                    const res = await createEquipmentAsAdmin(token, newEquipment);
-                    if (res.success) {
-                      setMessage('Asset created!');
-                      setNewEquipment({ name: '', type: '', condition: 'good' as any, quantity: 1 });
-                      fetchData();
-                      setTimeout(() => setMessage(null), 3000);
-                    } else showError(res.error || 'Failed to create equipment');
-                  }}>Register Units</Button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <select
+                      value={newEquipment.condition}
+                      onChange={e => setNewEquipment(p => ({ ...p, condition: e.target.value as any }))}
+                      className="flex-1 h-10 rounded-xl bg-white dark:bg-[#2c2c2e] border border-[#d2d2d7] dark:border-[#303030] px-3 text-[11px] font-bold outline-none"
+                    >
+                      <option value="new">Brand New</option>
+                      <option value="good">Good Condition</option>
+                      <option value="fair">Fair / Used</option>
+                      <option value="damaged">Damaged / Repair</option>
+                    </select>
+                    <select
+                      value={newEquipment.room_id || ''}
+                      onChange={e => setNewEquipment(p => ({ ...p, room_id: e.target.value ? parseInt(e.target.value) : null }))}
+                      className="flex-1 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-300/30 px-3 text-[11px] font-black uppercase text-[#0066cc] outline-none"
+                    >
+                      <option value="">Lobby (No Room)</option>
+                      {floors.map(f => (
+                        <optgroup key={f.id} label={f.name}>
+                          {f.rooms.filter(r => r.type !== 'inactive').map(r => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 bg-white dark:bg-[#2c2c2e] rounded-xl border border-[#d2d2d7] dark:border-[#303030]">
+                    <input
+                      type="checkbox"
+                      id="isSensitive"
+                      checked={newEquipment.is_sensitive}
+                      onChange={e => setNewEquipment(p => ({ ...p, is_sensitive: e.target.checked }))}
+                      className="w-4 h-4 rounded border-slate-300 text-[#0066cc] focus:ring-[#0066cc]"
+                    />
+                    <label htmlFor="isSensitive" className="text-[10px] font-black uppercase tracking-widest text-[#1d1d1f] dark:text-[#f5f5f7] cursor-pointer">
+                      Mark as Sensitive Item (Requires Admin Approval)
+                    </label>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-black uppercase text-[#86868b] ml-1">UI Model</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {VECTOR_UI_OPTIONS.map(opt => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setNewEquipment(p => ({ ...p, type: opt.id }))}
+                          className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${newEquipment.type === opt.id ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-lg' : 'bg-white dark:bg-[#2c2c2e] border-[#d2d2d7] dark:border-[#303030] text-[#1d1d1f] dark:text-[#f5f5f7] hover:border-[#86868b]'}`}
+                        >
+                          <span className="text-lg mb-1">{opt.icon}</span>
+                          <span className="text-[7px] font-black uppercase">{opt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between ml-1 mb-2">
+                      <p className="text-[9px] font-black uppercase text-[#86868b]">Real Photos</p>
+                    </div>
+                    <FileUploader
+                      token={useAuthStore.getState().token || ''}
+                      onUploadSuccess={(url) => setNewPhotoUrls(p => [...p, url])}
+                      accept="image/jpeg,image/png,image/webp,image/avif"
+                      hintText="Supports Images Only (JPG, PNG)"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      {newPhotoUrls.map((url, i) => (
+                        <div key={i} className="relative group w-12 h-12 rounded-lg overflow-hidden border border-[#d2d2d7] dark:border-[#303030]">
+                          <DocumentPreview url={url} isThumbnail className="w-full h-full" />
+                          <button onClick={() => setNewPhotoUrls(p => p.filter((_, idx) => idx !== i))} className="absolute inset-0 bg-rose-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                      {newPhotoUrls.length === 0 && <p className="text-[8px] italic text-[#86868b] p-3 w-full text-center bg-white/50 dark:bg-black/20 rounded-lg">No photos attached</p>}
+                    </div>
+                  </div>
+
+                  {showRegisterPreview ? (
+                    <div className="space-y-4 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 animate-in fade-in zoom-in-95">
+                      <div className="flex items-start gap-3">
+                         <Info size={18} className="text-[#0066cc] mt-0.5" />
+                         <div>
+                            <p className="text-[10px] font-black uppercase text-[#0066cc]">Preview Registration</p>
+                            <p className="text-[11px] font-bold mt-1">
+                              Creating "{newEquipment.name}" ({newEquipment.quantity} units, {newEquipment.condition}) 
+                              {newEquipment.room_id ? ' in assigned room.' : ' in lobby.'}
+                            </p>
+                         </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="secondary" className="flex-1 py-3" onClick={() => setShowRegisterPreview(false)}>Edit</Button>
+                        <Button className="flex-[2] py-3 bg-[#0066cc]" onClick={async () => {
+                          if (!token) return;
+                          const res = await createEquipmentAsAdmin(token, {
+                            ...newEquipment,
+                            photo_url: newPhotoUrls.length > 0 ? JSON.stringify(newPhotoUrls) : undefined
+                          });
+                          if (res.success) {
+                            setMessage(newEquipment.room_id ? 'Asset registered to room!' : 'Asset created in lobby!');
+                            setShowRegisterPreview(false);
+                            setNewEquipment({ name: '', type: 'laptop', condition: 'good' as any, quantity: 1, serial_number: '', room_id: null, is_sensitive: false });
+                            setNewPhotoUrls([]);
+                            fetchData();
+                            setShowRegisterPreview(false);
+                            setTimeout(() => setMessage(null), 3000);
+                          } else showError(res.error || 'Failed to create equipment');
+                        }}>Confirm & Register</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button 
+                      className="w-full text-[9px] font-black py-4 uppercase tracking-widest bg-gradient-to-r from-[#0066cc] to-[#004e9c] hover:shadow-xl hover:shadow-blue-500/20 active:scale-[0.98] transition-all" 
+                      onClick={() => {
+                        if (!newEquipment.name) return showError('Name is required');
+                        setShowRegisterPreview(true);
+                      }}
+                    >
+                      Process Registration
+                    </Button>
+                  )}
                 </div>
               </section>
             )}
@@ -748,7 +1047,7 @@ const DashboardPage: React.FC = () => {
                     <option value="teacher">Teacher</option>
                     <option value="admin">Admin</option>
                   </select>
-                  <Button className="w-full text-[9px] font-black py-4 uppercase tracking-widest" onClick={handleAddUser}>Create User Account</Button>
+                  <Button className="w-full text-[9px] font-black py-4 uppercase tracking-widest bg-gradient-to-r from-[#0066cc] to-[#004e9c] hover:shadow-xl hover:shadow-blue-500/20 active:scale-[0.98] transition-all" onClick={handleAddUser}>Create User Account</Button>
                 </div>
               </section>
             )}
@@ -770,10 +1069,16 @@ const DashboardPage: React.FC = () => {
                       <div key={e.id} className="p-3 bg-white dark:bg-[#1d1d1f] rounded-xl border border-[#d2d2d7] dark:border-[#303030] flex items-center justify-between group">
                         <div className="truncate">
                           <p className="text-[10px] font-bold uppercase truncate">{e.name}</p>
-                          <p className="text-[8px] text-[#86868b]">{e.serial_number || e.type}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-[8px] text-[#86868b]">{e.serial_number || e.type}</p>
+                            {e.room && <span className="text-[8px] font-black text-[#0066cc] uppercase tracking-tighter">@{e.room.name}</span>}
+                          </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button onClick={() => setEditEquipmentModal(e)} className="p-2 text-[#0066cc] bg-blue-50 dark:bg-blue-500/10 rounded-lg hover:scale-110 transition-all" title="Edit Info">
+                          <button onClick={() => {
+                            setEditEquipmentModal(e);
+                            setEditPhotoUrls(parsePhotos(e.photo_url));
+                          }} className="p-2 text-[#0066cc] bg-blue-50 dark:bg-blue-500/10 rounded-lg hover:scale-110 transition-all" title="Edit Info">
                             <Edit size={14} />
                           </button>
                           <button onClick={() => setConditionHistoryModal({ id: e.id, name: e.name })} className="p-2 text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg hover:scale-110 transition-all" title="Condition Log">
@@ -796,14 +1101,32 @@ const DashboardPage: React.FC = () => {
                           <p className="text-[8px] text-[#86868b] italic">{u.email}</p>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button onClick={() => setEditUserModal(u)} className="p-2 text-[#0066cc] bg-blue-50 dark:bg-blue-500/10 rounded-lg hover:scale-110 transition-all" title="Edit">
+                          {u.role === 'teacher' && (
+                            <button onClick={async () => {
+                              if (!token) return;
+                              const res = await getUserRooms(token, u.id);
+                              if (res.success && res.data) {
+                                setUserRoomModal({ user: u, rooms: res.data.assignedRooms });
+                              } else {
+                                setConfirmDialog({
+                                  title: "Error",
+                                  message: res.error || 'Failed to fetch user rooms',
+                                  confirmText: "Back",
+                                  onConfirm: () => setConfirmDialog(null)
+                                });
+                              }
+                            }} className="p-2 text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-sm flex items-center justify-center" title="Manage Rooms">
+                              <Building size={14} />
+                            </button>
+                          )}
+                          <button onClick={() => setEditUserModal(u)} className="p-2 text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-sm flex items-center justify-center" title="Edit">
                             <Edit size={14} />
                           </button>
-                          <button onClick={() => setHistoryModal({ type: 'user', id: u.id, title: u.username })} className="p-2 text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg hover:scale-110 transition-all" title="History">
+                          <button onClick={() => setHistoryModal({ type: 'user', id: u.id, title: u.username })} className="p-2 text-indigo-700 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-500/20 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-sm flex items-center justify-center" title="History">
                             <History size={14} />
                           </button>
                           {u.id !== user?.id && (
-                            <button onClick={() => handleDeleteUser(u.id)} className="p-2 text-rose-600 bg-rose-50 dark:bg-rose-500/10 rounded-lg hover:scale-110 transition-all" title="Delete">
+                            <button onClick={() => handleDeleteUser(u.id)} className="p-2 text-rose-700 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-sm flex items-center justify-center" title="Delete">
                               <Trash2 size={14} />
                             </button>
                           )}
@@ -814,6 +1137,9 @@ const DashboardPage: React.FC = () => {
                   )}
                 </div>
               </section>
+            )}
+            {systemSubTab === 'vault' && token && (
+              <GlobalDocuments token={token} isAdmin={isAdmin} />
             )}
           </div>
         )}
@@ -842,7 +1168,7 @@ const DashboardPage: React.FC = () => {
             <div className="h-[240px] w-full bg-white dark:bg-[#1d1d1f] p-4 rounded-2xl border border-[#d2d2d7] dark:border-[#303030]">
               {usageChartData.length > 0 ? (
                 <ResponsiveContainer width="99%" height={200}>
-                  <BarChart data={usageChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <RechartsBarChart data={usageChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <XAxis type="number" hide />
                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#86868b', fontWeight: 'bold' }} width={100} />
                     <Tooltip
@@ -855,7 +1181,7 @@ const DashboardPage: React.FC = () => {
                         <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#0066cc' : '#5e5e66'} />
                       ))}
                     </Bar>
-                  </BarChart>
+                  </RechartsBarChart>
                 </ResponsiveContainer>
               ) : null}
             </div>
@@ -863,9 +1189,12 @@ const DashboardPage: React.FC = () => {
             <div className="space-y-4 pt-4 border-t border-[#f5f5f7] dark:border-[#303030]">
               <div className="flex items-center justify-between">
                 <p className="text-[10px] uppercase font-black tracking-widest text-[#86868b]">Full System Logs</p>
-                <div className="flex items-center gap-4">
-                  <button onClick={onDownloadCSV} className="text-[9px] font-black uppercase text-[#0066cc] hover:underline">Download CSV</button>
-                  <button onClick={handleResetHistory} className="text-[9px] font-black uppercase text-rose-500 hover:underline">Reset Data</button>
+                <div className="flex items-center gap-3">
+                  <button onClick={onDownloadCSV} className="text-[9px] font-black uppercase text-[#0066cc] hover:underline whitespace-nowrap">CSV Export</button>
+                  <button onClick={onExportToSheets} disabled={isExportingSheets} className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 disabled:opacity-50 transition-colors whitespace-nowrap">
+                    {isExportingSheets ? <Loader2 size={12} className="animate-spin" /> : <FileSpreadsheet size={12} />} Sheets Backup
+                  </button>
+                  <button onClick={handleResetHistory} className="text-[9px] font-black uppercase text-rose-500 hover:underline border-l border-[#d2d2d7] dark:border-[#303030] pl-3 ml-1">Reset Data</button>
                 </div>
               </div>
               <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar space-y-2">
@@ -888,6 +1217,9 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+        {mgmtTab === 'notifications' && (
+          <NotificationPreferences role={user?.role as any || 'student'} />
         )}
       </div>
     </div>
@@ -987,9 +1319,10 @@ const DashboardPage: React.FC = () => {
               </h2>
               <button
                 onClick={() => setShowAllUnits(!showAllUnits)}
-                className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter transition-all shadow-sm ${showAllUnits ? 'bg-[#0066cc] text-white' : 'bg-white dark:bg-[#1d1d1f] text-[#86868b] border border-[#d2d2d7] dark:border-[#303030]'}`}
+                disabled={mapMode === 'draw'}
+                className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter transition-all shadow-sm ${mapMode === 'draw' ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed border-dashed border-slate-300 dark:border-slate-700' : showAllUnits ? 'bg-[#0066cc] text-white' : 'bg-white dark:bg-[#1d1d1f] text-[#86868b] border border-[#d2d2d7] dark:border-[#303030]'}`}
               >
-                {showAllUnits ? 'Showing Global' : 'Show All Units'}
+                {mapMode === 'draw' ? 'Global Disabled (Drawing)' : showAllUnits ? 'Showing Global' : 'View All Assets'}
               </button>
             </div>
           </div>
@@ -1003,10 +1336,10 @@ const DashboardPage: React.FC = () => {
             )}
           </AnimatePresence>
 
-          <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="relative flex-1 flex flex-col min-h-0 min-w-0">
             <AnimatePresence mode="wait">
               {viewMode === '3d' ? (
-                <motion.div key="3d" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} className="flex-1 flex flex-col h-full">
+                <motion.div key="3d" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} className="flex-1 flex flex-col h-full min-h-0">
                   {loadingEquipment ? (
                     <div className="flex-1 flex items-center justify-center"><div className="w-12 h-12 border-4 border-[#0066cc] border-t-transparent rounded-full animate-spin" /></div>
                   ) : groupedEquipment.length === 0 ? (
@@ -1016,10 +1349,10 @@ const DashboardPage: React.FC = () => {
                   )}
                 </motion.div>
               ) : (
-                <motion.div key="map" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col gap-6 max-w-6xl mx-auto w-full px-2 lg:px-4">
-                  <div className="flex items-center justify-between">
+                <motion.div key="map" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col gap-4 max-w-6xl mx-auto w-full px-2 lg:px-4 min-h-0">
+                  <div className="flex items-center justify-between shrink-0">
                     <div className="relative">
-                      <button onClick={() => setIsFloorMenuOpen(!isFloorMenuOpen)} className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-[#1d1d1f] rounded-full border border-[#d2d2d7] dark:border-[#303030] shadow-sm hover:shadow-md font-semibold text-sm">
+                      <button onClick={() => setIsFloorMenuOpen(!isFloorMenuOpen)} className="flex items-center gap-3 px-6 py-2 bg-white dark:bg-[#1d1d1f] rounded-full border border-[#d2d2d7] dark:border-[#303030] shadow-sm hover:shadow-md font-semibold text-sm">
                         <Building size={16} className="text-[#86868b]" /> {currentFloor?.name || 'Floors'} <ChevronDown size={14} className={isFloorMenuOpen ? 'rotate-180' : ''} />
                       </button>
                       {isFloorMenuOpen && (
@@ -1033,24 +1366,25 @@ const DashboardPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    {selectedRoomId && (
-                      <div className="flex items-center gap-2">
-                        {isAdmin && (
-                          <button
-                            onClick={() => setMapMode(mapMode === 'select' ? 'draw' : 'select')}
-                            className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${mapMode === 'draw' ? 'bg-[#0066cc] text-white' : 'bg-white dark:bg-[#2c2c2e] text-[#86868b] border border-[#d2d2d7] dark:border-[#303030]'}`}
-                          >
-                            {mapMode === 'draw' ? 'Drawing Active' : 'Draw Room'}
-                          </button>
-                        )}
+                    <div className="flex items-center gap-2">
+                      {isAdmin && (
+                        <button
+                          onClick={() => setMapMode(mapMode === 'select' ? 'draw' : 'select')}
+                          className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all shadow-lg hover:scale-105 active:scale-95 ${mapMode === 'draw' ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-[#2c2c2e] text-[#86868b] border border-[#d2d2d7] dark:border-[#303030]'}`}
+                        >
+                          <PenTool size={12} className="inline mr-2" />
+                          {mapMode === 'draw' ? 'Exit Drawing' : 'Draw Room'}
+                        </button>
+                      )}
+                      {selectedRoomId && (
                         <button onClick={() => setSelectedRoomId(null)} className="flex items-center gap-2 bg-[#1d1d1f] dark:bg-[#f5f5f7] px-4 py-2 rounded-full text-white dark:text-[#1d1d1f] text-[10px] font-black uppercase tracking-widest shadow-lg">
                           Zone: {currentFloor?.rooms.find(r => r.id === selectedRoomId)?.name} <X size={12} />
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex-1 bg-white/50 dark:bg-black/20 rounded-[40px] border border-[#d2d2d7] dark:border-[#303030] overflow-hidden backdrop-blur-sm relative">
+                  <div className="flex-1 min-h-[350px] bg-white/50 dark:bg-black/20 rounded-[40px] border border-[#d2d2d7] dark:border-[#303030] overflow-hidden backdrop-blur-sm relative mb-4">
                     <FloorPlanMap
                       floorId={currentFloorId || 0}
                       rooms={currentFloor?.rooms || []}
@@ -1084,7 +1418,7 @@ const DashboardPage: React.FC = () => {
         <aside
           className={`fixed top-0 bottom-0 right-0 lg:top-6 lg:bottom-6 lg:right-6 bg-white/95 dark:bg-[#1d1d1f]/95 backdrop-blur-2xl border-l lg:border border-[#d2d2d7] dark:border-[#303030] lg:rounded-[32px] shadow-2xl z-[60] lg:z-30 transition-all duration-500 ease-in-out 
             ${isSidebarCollapsed ? 'lg:w-[64px]' : 'lg:w-[320px] xl:w-[400px]'}
-            ${isMobileMenuOpen ? 'w-[320px] translate-x-0' : 'w-[320px] translate-x-full lg:translate-x-0'}
+            ${isMobileMenuOpen ? 'w-[320px] translate-x-0 opacity-100' : 'w-[320px] translate-x-full lg:translate-x-0 opacity-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto'}
           `}
         >
           <button
@@ -1109,13 +1443,25 @@ const DashboardPage: React.FC = () => {
                 </div>
 
                 <div className="p-6 border-t border-[#f5f5f7] dark:border-[#303030] bg-[#fcfcfd] dark:bg-black/10">
-                  <button
-                    onClick={onSignOut}
-                    className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all font-black text-[10px] uppercase tracking-widest border border-[#d2d2d7] dark:border-[#303030] shadow-sm active:scale-95"
-                  >
-                    <LogOut size={18} />
-                    <span>Sign Out</span>
-                  </button>
+                  <div className="flex flex-col gap-2 pt-6 border-t border-[#f5f5f7] dark:border-[#303030]">
+                    <button
+                      onClick={() => setIsScannerOpen(true)}
+                      className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl bg-gradient-to-br from-[#1d1d1f] to-[#3a3a3c] dark:from-[#0066cc] dark:to-[#004e9c] text-white hover:shadow-xl hover:shadow-blue-500/10 transition-all font-bold text-[10px] uppercase tracking-widest active:scale-95"
+                    >
+                      <div className="p-1.5 bg-white/10 rounded-lg">
+                        <ScanLine size={16} />
+                      </div>
+                      <span>Scan Barcode</span>
+                    </button>
+
+                    <button
+                      onClick={onSignOut}
+                      className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all font-black text-[10px] uppercase tracking-widest border border-rose-100 dark:border-rose-900/30 shadow-sm active:scale-95"
+                    >
+                      <LogOut size={18} />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1124,9 +1470,20 @@ const DashboardPage: React.FC = () => {
               <div className="flex flex-col items-center py-12 gap-8 h-full">
                 <div className="w-8 h-8 rounded-full bg-[#0066cc] flex items-center justify-center text-white text-[10px] font-black">{user?.username[0].toUpperCase()}</div>
                 <div className="flex-1 flex flex-col gap-6 items-center">
-                  <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('spatial'); }} className="p-2 rounded-xl text-[#0066cc] hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"><Building size={20} /></button>
-                  <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('approvals'); }} className="p-2 rounded-xl text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"><ListTodo size={20} /></button>
+                  <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('spatial'); }} className={`p-2 rounded-xl transition-colors ${mgmtTab === 'spatial' ? 'text-[#0066cc] bg-blue-50 dark:bg-blue-900/20' : 'text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800'}`}><Building size={20} /></button>
+                  <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('approvals'); }} className={`p-2 rounded-xl transition-colors ${mgmtTab === 'approvals' ? 'text-[#0066cc] bg-blue-50 dark:bg-blue-100/10' : 'text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800'}`}><ListTodo size={20} /></button>
+                  <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('storage'); }} className={`p-2 rounded-xl transition-colors ${mgmtTab === 'storage' ? 'text-[#0066cc] bg-blue-50 dark:bg-blue-100/10' : 'text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800'}`}><Archive size={20} /></button>
+                  <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('system'); }} className={`p-2 rounded-xl transition-colors ${mgmtTab === 'system' ? 'text-[#0066cc] bg-blue-50 dark:bg-blue-100/10' : 'text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800'}`}><BarChart3 className="w-5 h-5" /></button>
+                  <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('notifications'); }} className={`p-2 rounded-xl transition-colors ${mgmtTab === 'notifications' ? 'text-[#0066cc] bg-blue-50 dark:bg-blue-100/10' : 'text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800'}`}><Bell size={20} /></button>
                   {isAdmin && <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('system'); }} className="p-2 rounded-xl text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"><Square size={20} /></button>}
+                  
+                  {/* Icon version of Scanner for collapsed view */}
+                  <button
+                    onClick={() => setIsScannerOpen(true)}
+                    className="p-2 rounded-xl bg-[#0066cc] text-white shadow-lg shadow-blue-500/20 hover:bg-[#005bb8] transition-all"
+                  >
+                    <ScanLine size={20} />
+                  </button>
                 </div>
                 <button onClick={onSignOut} className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"><LogOut size={20} /></button>
               </div>
@@ -1134,47 +1491,200 @@ const DashboardPage: React.FC = () => {
           </div>
         </aside>
 
-        {/* Product Expand Modal */}
         <AnimatePresence>
           {selectedItem && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-20">
+            <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-8 lg:p-20">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedItem(null)} className="fixed inset-0 bg-black/80 backdrop-blur-xl" />
-              <motion.div layoutId={`card-${selectedItem.id}`} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-5xl bg-white dark:bg-[#1d1d1f] rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-[#d2d2d7] dark:border-[#303030]">
-                <button onClick={() => setSelectedItem(null)} className="absolute top-6 right-6 z-10 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"><X size={24} /></button>
-                <div className="w-full md:w-1/2 bg-[#f5f5f7] dark:bg-black p-12 flex items-center justify-center"><Virtual3DModel type={selectedItem.type} quantity={selectedItem.totalQuantity || 1} isExpanded /></div>
-                <div className="w-full md:w-1/2 p-12 flex flex-col overflow-y-auto">
+              <motion.div layoutId={`card-${selectedItem.id}`} initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative w-full max-w-5xl bg-white dark:bg-[#1d1d1f] sm:rounded-[32px] rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-[#d2d2d7] dark:border-[#303030] max-h-[95vh] sm:max-h-[90vh]">
+                <button onClick={() => setSelectedItem(null)} className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"><X size={24} /></button>
+                <div className="hidden md:flex w-full md:w-1/2 bg-[#f5f5f7] dark:bg-black p-12 items-center justify-center"><Virtual3DModel type={selectedItem.type} quantity={selectedItem.totalQuantity || 1} isExpanded /></div>
+                <div className="w-full md:w-1/2 p-6 sm:p-10 md:p-12 flex flex-col overflow-y-auto max-h-[90vh] md:max-h-full">
                   <p className="text-[10px] font-black uppercase tracking-[0.5em] text-[#86868b] mb-4">Specifications</p>
-                  <h2 className="text-4xl font-bold mb-8">{selectedItem.name}</h2>
-                  <div className="grid grid-cols-2 gap-8 mb-12">
+                  <h2 className="text-4xl font-bold mb-4">{selectedItem.name}</h2>
+
+                  {/* Real Photo Gallery */}
+                  <div className="mb-8">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#86868b] mb-3">Real Photos</p>
+                    <div className="flex flex-wrap gap-3">
+                      {parsePhotos(selectedItem.photo_url).map((url, i) => (
+                        <div key={i} className="relative group w-20 h-20 rounded-2xl overflow-hidden border border-[#d2d2d7] dark:border-[#303030] shadow-sm">
+                          <DocumentPreview url={url} isThumbnail className="w-full h-full" onClick={() => window.open(url, '_blank')} />
+                          {(isAdmin || isTeacher) && (
+                            <button
+                              onClick={async () => {
+                                if (!token) return;
+                                const currentPhotos = parsePhotos(selectedItem.photo_url);
+                                const nextPhotos = currentPhotos.filter((_, idx) => idx !== i);
+                                const res = await updateEquipmentAsAdmin(token, selectedItem.id, {
+                                  photo_url: JSON.stringify(nextPhotos)
+                                });
+                                if (res.success) {
+                                  setSelectedItem({ ...selectedItem, photo_url: JSON.stringify(nextPhotos) });
+                                  fetchData();
+                                }
+                              }}
+                              className="absolute inset-0 bg-rose-500/90 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-110 group-hover:scale-100"
+                            >
+                              <Trash2 size={16} />
+                              <span className="text-[7px] font-black uppercase mt-1">Delete</span>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      {parsePhotos(selectedItem.photo_url).length === 0 && (
+                        <div className="w-full p-6 rounded-2xl border-2 border-dashed border-[#d2d2d7] dark:border-[#303030] flex flex-col items-center justify-center opacity-30">
+                          <History size={20} className="mb-1" />
+                          <p className="text-[8px] font-black uppercase">No real photos attached</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-8 mb-8">
                     <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Asset ID</p><p className="font-mono text-sm">{selectedItem.serial_number || 'N/A'}</p></div>
-                    <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Type</p><p className="text-sm">{selectedItem.type}</p></div>
+                    <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Real Location</p><p className="text-sm font-black text-[#0066cc] uppercase tracking-wider">{(selectedItem as any).rooms?.length > 0 ? (selectedItem as any).rooms.join(', ') : selectedItem.room?.name || 'Unassigned Lobby'}</p></div>
                     <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Status</p><p className="text-sm uppercase font-black">{selectedItem.status}</p></div>
                     <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Availability</p><p className="text-sm font-bold">{selectedItem.availableQuantity} / {selectedItem.totalQuantity}</p></div>
                   </div>
-                  <Button
-                    className="mt-auto w-full py-8 rounded-[25px] text-xs font-black uppercase tracking-[0.2em]"
-                    isLoading={isSubmittingClaim}
-                    onClick={async () => {
-                      if (!selectedItem) return;
-                      const submitted = await onQuickBorrow(selectedItem.id);
-                      if (submitted) {
-                        setSelectedItem(null);
-                      }
-                    }}
-                    disabled={
-                      isSubmittingClaim ||
-                      selectedItem.status !== 'available' ||
-                      (selectedItem.availableQuantity || 0) <= 0
-                    }
-                  >
-                    Process Claim
-                  </Button>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 mb-6">
+                    <button
+                      onClick={() => setConditionHistoryOpen({ id: selectedItem.id, name: selectedItem.name })}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#f5f5f7] dark:bg-[#2c2c2e] border border-[#d2d2d7] dark:border-[#303030] text-[10px] font-black uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-600 transition-all"
+                    >
+                      <Clock size={14} /> History
+                    </button>
+                  </div>
+
+                    <div className="flex gap-2 mb-4">
+                      <button
+                        onClick={() => setBarcodeModal({ name: selectedItem.name, serial: selectedItem.serial_number || 'N/A' })}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1d1d1f] dark:bg-[#f5f5f7] text-white dark:text-[#1d1d1f] text-[10px] font-black uppercase tracking-widest hover:opacity-90 hover:shadow-xl hover:-translate-y-0.5 transition-all shadow-lg active:scale-95"
+                      >
+                        <LayoutPanelLeft size={14} /> Barcode
+                      </button>
+                      <button
+                        onClick={() => setIsQRModalOpen(true)}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-white dark:bg-[#323235] border border-[#d2d2d7] dark:border-[#424245] text-[#1d1d1f] dark:text-[#f5f5f7] text-[10px] font-black uppercase tracking-widest hover:bg-[#f5f5f7] dark:hover:bg-[#3a3a3c] transition-all shadow-sm hover:shadow-md active:scale-95"
+                      >
+                        <QrCode size={14} /> View QR
+                      </button>
+                    </div>
+
+                    {showClaimPreview ? (
+                      <div className="mt-auto space-y-4 p-5 rounded-[25px] bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 animate-in fade-in slide-in-from-bottom-2">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-xl text-blue-600 dark:text-blue-300">
+                             <ClipboardCheck size={18} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[#0066cc]">Confirm Borrow Request</p>
+                            <p className="text-xs font-bold mt-1">You are requesting 1 unit of "{selectedItem.name}" for 7 days.</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                           <Button 
+                             variant="secondary"
+                             className="flex-1 py-4"
+                             onClick={() => setShowClaimPreview(false)}
+                           >
+                             Cancel
+                           </Button>
+                           <Button
+                             className="flex-[2] py-4 bg-gradient-to-r from-[#0066cc] to-[#004e9c] text-white hover:shadow-lg hover:shadow-blue-500/20 active:scale-[0.98] transition-all"
+                             isLoading={isSubmittingClaim}
+                             onClick={async () => {
+                               if (!selectedItem) return;
+                               const submitted = await onQuickBorrow(selectedItem.id);
+                               if (submitted) {
+                                  setSelectedItem(null);
+                                  setShowClaimPreview(false);
+                               }
+                             }}
+                           >
+                             Confirm & Submit
+                           </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        className="mt-auto w-full py-8 rounded-[25px] text-xs font-black uppercase tracking-[0.2em] bg-gradient-to-br from-[#1d1d1f] to-[#3a3a3c] dark:from-[#0066cc] dark:to-[#004e9c] text-white hover:shadow-2xl hover:shadow-blue-500/10 active:scale-[0.98] transition-all"
+                        isLoading={isSubmittingClaim}
+                        onClick={() => setShowClaimPreview(true)}
+                        disabled={
+                          isSubmittingClaim ||
+                          selectedItem.status !== 'available' ||
+                          (selectedItem.availableQuantity || 0) <= 0
+                        }
+                      >
+                        Process Claim
+                      </Button>
+                    )}
                 </div>
               </motion.div>
             </div>
           )}
         </AnimatePresence>
+
+        {/* Condition History Modal */}
+        {conditionHistoryOpen && token && (
+          <ConditionHistoryModal
+            isOpen={!!conditionHistoryOpen}
+            onClose={() => setConditionHistoryOpen(null)}
+            equipmentId={conditionHistoryOpen.id}
+            equipmentName={conditionHistoryOpen.name}
+            token={token}
+          />
+        )}
+
+        {/* Barcode Modal */}
+        {barcodeModal && (
+          <BarcodeModal
+            isOpen={!!barcodeModal}
+            onClose={() => setBarcodeModal(null)}
+            equipmentName={barcodeModal.name}
+            serialNumber={barcodeModal.serial}
+          />
+        )}
       </div>
+
+      <BarcodeScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onDetected={(code) => {
+          setSearchTerm(code);
+          showMessage(`Scanned: ${code}`);
+          const match = groupedEquipment.find(e =>  e.serial_number === code || e.all_items.some(i => i.serial_number === code));
+          if (match) {
+            setSelectedItem(match);
+          }
+        }}
+      />
+
+      {/* QR Code Viewer Modal */}
+      {isQRModalOpen && selectedItem && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => setIsQRModalOpen(false)}>
+           <motion.div 
+             initial={{ scale: 0.9, opacity: 0 }}
+             animate={{ scale: 1, opacity: 1 }}
+             className="bg-white dark:bg-[#1d1d1f] rounded-[32px] p-8 max-w-sm w-full border border-[#d2d2d7] dark:border-[#303030] shadow-2xl flex flex-col items-center"
+             onClick={e => e.stopPropagation()}
+           >
+              <div className="w-full flex justify-between items-center mb-6">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#86868b]">Asset QR Code</p>
+                <button onClick={() => setIsQRModalOpen(false)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><X size={16} /></button>
+              </div>
+              <div className="p-4 bg-white rounded-2xl border-2 border-[#f5f5f7] mb-6 shadow-inner">
+                 <QRCode value={(selectedItem as any).qr_code_value || `SIMS_ITEM_${selectedItem.id}`} size={200} />
+              </div>
+              <h4 className="font-bold text-center mb-1">{selectedItem.name}</h4>
+              <p className="text-[10px] font-mono text-[#86868b] mb-6 uppercase">{selectedItem.serial_number || 'NO_SERIAL'}</p>
+              <Button className="w-full py-4 bg-[#1d1d1f] dark:bg-[#f5f5f7] text-white dark:text-[#1d1d1f] rounded-xl font-black text-[9px] uppercase tracking-widest" onClick={() => window.print()}>Print Label</Button>
+           </motion.div>
+        </div>
+      )}
+
       {editEquipmentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setEditEquipmentModal(null)}>
           <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-6" onClick={e => e.stopPropagation()}>
@@ -1202,8 +1712,65 @@ const DashboardPage: React.FC = () => {
               </div>
               <Input label="Quantity" type="number" value={editEquipmentModal.quantity} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, quantity: e.target.value as any })} />
               <Input label="Serial #" value={editEquipmentModal.serial_number || ''} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, serial_number: e.target.value })} />
-              <Input label="Location" value={editEquipmentModal.location || ''} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, location: e.target.value })} />
-              <Input label="Photo URL" value={editEquipmentModal.photo_url || ''} onChange={e => setEditEquipmentModal({ ...editEquipmentModal, photo_url: e.target.value })} />
+
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase text-[#86868b] tracking-widest ml-1">UI Model</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {VECTOR_UI_OPTIONS.map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setEditEquipmentModal({ ...editEquipmentModal, type: opt.id })}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${editEquipmentModal.type === opt.id ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-lg' : 'bg-white dark:bg-[#2c2c2e] border-[#d2d2d7] dark:border-[#303030] text-[#1d1d1f] dark:text-[#f5f5f7] hover:border-[#86868b]'}`}
+                    >
+                      <span className="text-lg mb-1">{opt.icon}</span>
+                      <span className="text-[7px] font-black uppercase">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between ml-1 mb-2">
+                  <p className="text-[10px] font-black uppercase text-[#86868b] tracking-widest">Real Photos</p>
+                </div>
+                <FileUploader
+                  token={useAuthStore.getState().token || ''}
+                  onUploadSuccess={(url) => setEditPhotoUrls(p => [...p, url])}
+                  accept="image/jpeg,image/png,image/webp,image/avif"
+                  hintText="Supports Images Only (JPG, PNG)"
+                />
+                <div className="flex flex-wrap gap-2 p-3 bg-slate-50 dark:bg-black/20 rounded-xl border border-slate-100 dark:border-slate-800">
+                  {editPhotoUrls.map((url, i) => (
+                    <div key={i} className="relative group w-14 h-14 rounded-lg overflow-hidden border border-[#d2d2d7] dark:border-[#303030]">
+                      <DocumentPreview url={url} isThumbnail className="w-full h-full" />
+                      <button onClick={() => setEditPhotoUrls(p => p.filter((_, idx) => idx !== i))} className="absolute inset-0 bg-rose-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  {editPhotoUrls.length === 0 && <p className="text-[8px] italic text-[#86868b] w-full text-center py-2">No photos attached</p>}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase text-[#86868b] tracking-widest ml-1 flex items-center gap-1">
+                  <Building size={10} /> Spatial Assignment
+                </p>
+                <select
+                  value={editEquipmentModal.room_id || ''}
+                  onChange={e => setEditEquipmentModal({ ...editEquipmentModal, room_id: e.target.value ? parseInt(e.target.value) : null })}
+                  className="w-full h-12 px-4 rounded-[10px] bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-900/30 text-[#0066cc] text-[10px] font-black uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
+                >
+                  <option value="">Unassigned Lobby</option>
+                  {floors.map(floor => (
+                    <optgroup key={floor.id} label={`Floor: ${floor.name}`} className="font-bold text-slate-500 bg-white dark:bg-slate-900">
+                      {floor.rooms.filter(room => room.type !== 'inactive').map(room => (
+                        <option key={room.id} value={room.id}>{room.name} ({room.type === 'storage' ? 'Storage' : 'Regular'})</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="flex gap-3 pt-5 mt-4 border-t border-slate-100 dark:border-slate-800">
               <Button className="flex-1" variant="secondary" onClick={() => setEditEquipmentModal(null)}>Cancel</Button>
@@ -1282,12 +1849,16 @@ const DashboardPage: React.FC = () => {
                 <select
                   value={editUserModal.role}
                   onChange={e => setEditUserModal({ ...editUserModal, role: e.target.value as any })}
-                  className="w-full h-12 px-4 rounded-[10px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold"
+                  disabled={editUserModal.id === user?.id}
+                  className="w-full h-12 px-4 rounded-[10px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="student">Student</option>
                   <option value="teacher">Teacher</option>
                   <option value="admin">Administrator</option>
                 </select>
+                {editUserModal.id === user?.id && (
+                  <p className="text-[9px] text-amber-500 mt-1 italic">You cannot change your own role during an active session.</p>
+                )}
               </div>
             </div>
             <div className="flex gap-3 pt-5 mt-4 border-t border-slate-100 dark:border-slate-800">
@@ -1423,11 +1994,13 @@ const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {conditionHistoryModal && (
+      {conditionHistoryModal && token && (
         <ConditionHistoryModal
-          item={conditionHistoryModal}
-          token={token!}
+          isOpen={!!conditionHistoryModal}
           onClose={() => setConditionHistoryModal(null)}
+          equipmentId={conditionHistoryModal.id}
+          equipmentName={conditionHistoryModal.name}
+          token={token}
         />
       )}
 
@@ -1464,71 +2037,96 @@ const DashboardPage: React.FC = () => {
       />
 
 
+      {userRoomModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => setUserRoomModal(null)}>
+          <div className="w-full max-w-lg rounded-[2rem] border border-[#d2d2d7] dark:border-[#303030] bg-[#f5f5f7] dark:bg-[#1d1d1f] shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="p-8 space-y-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-black uppercase tracking-[0.2em] text-2xl text-[#1d1d1f] dark:text-white">Room Clearance</h3>
+                  <p className="text-[10px] text-[#86868b] font-black uppercase tracking-widest mt-1">Teacher: {userRoomModal.user.username}</p>
+                </div>
+                <button onClick={() => setUserRoomModal(null)} className="p-3 rounded-2xl bg-white dark:bg-[#2c2c2e] text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white transition-all shadow-sm">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#86868b] ml-1">Current Assignments</p>
+                <div className="flex flex-wrap gap-2">
+                  {userRoomModal.rooms.length === 0 ? (
+                    <p className="text-[10px] italic text-[#86868b] py-4 w-full text-center bg-white/50 dark:bg-black/20 rounded-2xl">No rooms assigned.</p>
+                  ) : (
+                    userRoomModal.rooms.map((room: any) => (
+                      <div key={room.id} className="flex items-center gap-2 px-3 py-2 bg-[#0066cc] text-white rounded-xl shadow-lg animate-in fade-in zoom-in duration-300">
+                        <span className="text-[10px] font-black uppercase tracking-wider">{room.name} ({room.type === 'storage' ? 'Storage' : 'Regular'})</span>
+                        <button
+                          onClick={async () => {
+                            if (!token) return;
+                            const res = await unassignUserFromRoom(token, userRoomModal.user.id, room.id);
+                            if (res.success) {
+                              const updated = await getUserRooms(token, userRoomModal.user.id);
+                              if (updated.success && updated.data) setUserRoomModal({ ...userRoomModal, rooms: updated.data.assignedRooms });
+                            }
+                          }}
+                          className="p-1 hover:bg-white/20 rounded-md transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-[#d2d2d7] dark:border-[#303030]">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#86868b] ml-1">All Campus Rooms</p>
+                <div className="grid grid-cols-1 gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {floors.map(floor => (
+                    <div key={floor.id} className="space-y-2">
+                      <p className="text-[9px] font-black text-[#0066cc] uppercase tracking-widest ml-1">{floor.name}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {floor.rooms.filter(room => room.type !== 'inactive').map(room => {
+                          const isAssigned = userRoomModal.rooms.some(r => r.id === room.id);
+                          return (
+                            <button
+                              key={room.id}
+                              disabled={isAssigned}
+                              onClick={async () => {
+                                if (!token) return;
+                                const res = await assignUserToRoom(token, userRoomModal.user.id, room.id);
+                                if (res.success) {
+                                  const updated = await getUserRooms(token, userRoomModal.user.id);
+                                  if (updated.success && updated.data) setUserRoomModal({ ...userRoomModal, rooms: updated.data.assignedRooms });
+                                }
+                              }}
+                              className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-left ${isAssigned
+                                  ? 'bg-[#d2d2d7] dark:bg-[#303030] text-[#86868b] border-transparent opacity-50'
+                                  : 'bg-white dark:bg-[#2c2c2e] text-[#1d1d1f] dark:text-white border border-[#d2d2d7] dark:border-[#303030] hover:border-[#0066cc] shadow-sm'
+                                }`}
+                            >
+                              {room.name} ({room.type === 'storage' ? 'Storage' : 'Regular'})
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Button className="w-full py-6 !rounded-[1.5rem] bg-[#1d1d1f] text-white dark:bg-[#f5f5f7] dark:text-[#1d1d1f] !font-black !uppercase !tracking-[0.2em]" onClick={() => setUserRoomModal(null)}>Finish Setup</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style dangerouslySetInnerHTML={{ __html: `.custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #86868b; border-radius: 10px; }` }} />
     </div>
   );
 };
 
-const ConditionHistoryModal: React.FC<{ item: { id: number; name: string }; token: string; onClose: () => void }> = ({ item, token, onClose }) => {
-  const [logs, setLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchLogs = async () => {
-      const res = await getConditionHistory(token, item.id);
-      if (res.success) setLogs(res.data || []);
-      setLoading(false);
-    };
-    fetchLogs();
-  }, [item.id, token]);
-
-  return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-lg rounded-2xl border border-[#d2d2d7] dark:border-[#303030] bg-white dark:bg-slate-900 shadow-2xl p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="font-black uppercase tracking-widest text-[#1d1d1f] dark:text-white">Condition Timeline</h3>
-            <p className="text-[10px] text-[#86868b] font-bold uppercase">{item.name}</p>
-          </div>
-          <button onClick={onClose} className="p-2 text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white transition-colors"><XCircle size={24} /></button>
-        </div>
-
-        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-          {loading ? (
-            <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
-          ) : logs.length > 0 ? (
-            logs.map((log, i) => (
-              <div key={i} className="flex gap-4 group">
-                <div className="flex flex-col items-center">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500 shrink-0" />
-                  <div className="w-0.5 flex-1 bg-slate-100 dark:bg-slate-800" />
-                </div>
-                <div className="pb-6">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[9px] font-black uppercase text-[#86868b]">{new Date(log.recorded_at || log.created_at).toLocaleDateString()}</span>
-                    <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 text-[8px] font-black uppercase">{log.condition}</span>
-                  </div>
-                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{log.notes || 'Routine condition check.'}</p>
-                  <p className="text-[9px] text-[#86868b] mt-1 italic font-medium">Recorded by {log.request?.user?.username || 'Staff/System'}</p>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-12 text-[#86868b] opacity-40">
-              <ArchiveX className="mx-auto mb-2" size={48} />
-              <p className="text-[10px] uppercase font-black tracking-widest">No condition timeline available</p>
-              <p className="text-[8px] font-bold mt-1">Logs will appear here after item returns or inspections.</p>
-            </div>
-          )}
-        </div>
-
-        <div className="pt-6 border-t mt-4">
-          <Button onClick={onClose} className="w-full" variant="secondary">Close Timeline</Button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 
 const StatPill: React.FC<{ icon: React.ReactNode; label: string; value: string | number; color: string }> = ({ icon, label, value, color }) => (

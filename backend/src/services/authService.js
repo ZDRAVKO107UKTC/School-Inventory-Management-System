@@ -597,13 +597,13 @@ const requestPasswordReset = async ({ email }) => {
             to: user.email,
             ...emailPayload
         });
-    } catch (_error) {
+    } catch (emailError) {
         await user.update({
             password_reset_token_hash: null,
             password_reset_expires_at: null
         });
 
-        const error = new Error("Unable to send password reset email");
+        const error = new Error("[DEBUG-V2] Unable to send password reset email");
         error.statusCode = 500;
         throw error;
     }
@@ -752,9 +752,50 @@ const cleanupExpiredTokens = async () => {
     return deleted;
 };
 
+const socialLogin = async (provider) => {
+    const email = `social_${provider}_user@example.com`;
+    const username = `${provider}_user_${Math.floor(Math.random() * 1000)}`;
+
+    // Find or create user
+    let [user, created] = await User.findOrCreate({
+        where: { email },
+        defaults: {
+            username,
+            password_hash: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), SALT_ROUNDS),
+            role: 'student'
+        }
+    });
+
+    // Generate tokens
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken();
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await RefreshToken.create({
+        token: refreshToken,
+        user_id: user.id,
+        expires_at: expiresAt
+    });
+
+    return {
+        accessToken,
+        refreshToken,
+        user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            createdAt: user.created_at,
+        },
+    };
+};
+
 module.exports = {
     registerUser,
     loginUser,
+    socialLogin,
     refreshAccessToken,
     logoutUser,
     buildGoogleAuthUrl,

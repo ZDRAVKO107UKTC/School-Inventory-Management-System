@@ -30,6 +30,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => 
     setShowForgotPassword,
     login,
     signup,
+    forgotPassword,
     setError,
     setOAuthLoading,
     isOAuthLoading,
@@ -87,12 +88,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => 
     const success = await login(email, password);
     if (!success) return;
 
-    const currentUser = useAuthStore.getState().user;
-    if (currentUser?.role === 'admin') {
-      navigate('/dashboard');
-      return;
-    }
-
     navigate('/dashboard');
   };
 
@@ -101,9 +96,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode = 'login' }) => 
     if (success) navigate('/dashboard');
   };
 
-  const handleForgotPassword = (email: string) => {
-    // Current backend has no password-reset endpoint yet.
-    setError(`Password reset endpoint is not available yet. Saved email: ${email}`);
+  const handleForgotPassword = async (email: string) => {
+    const success = await forgotPassword(email);
+    if (success) {
+      // Switch back to login view on success or show a message.
+      // The store handles clearing errors.
+      setShowForgotPassword(false);
+    }
   };
 
   const handleGoogleAuth = async () => {

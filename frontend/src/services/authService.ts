@@ -2,6 +2,8 @@ import type {
   ApiResult,
   AuthSession,
   LoginRequest,
+  PasswordResetRequest,
+  ResetPasswordRequest,
   SignupRequest,
   User,
 } from '@/types/auth';
@@ -17,6 +19,8 @@ export interface IAuthService {
   logout(refreshToken?: string): Promise<ApiResult<null>>;
   refreshSession(refreshToken?: string): Promise<ApiResult<AuthSession>>;
   getCurrentUser(token: string): Promise<ApiResult<User>>;
+  requestPasswordReset(payload: PasswordResetRequest): Promise<ApiResult<null>>;
+  resetPassword(payload: ResetPasswordRequest): Promise<ApiResult<null>>;
 }
 
 export class AuthService implements IAuthService {
@@ -194,6 +198,36 @@ export class AuthService implements IAuthService {
         email: result.data.user.email,
         role: result.data.user.role,
       },
+    };
+  }
+
+  async requestPasswordReset(payload: PasswordResetRequest): Promise<ApiResult<null>> {
+    const result = await apiRequest<{ message?: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: payload,
+    });
+
+    if (!result.success) return { success: false, error: result.error };
+
+    return {
+      success: true,
+      data: null,
+      message: result.data?.message || 'Password reset email sent',
+    };
+  }
+
+  async resetPassword(payload: ResetPasswordRequest): Promise<ApiResult<null>> {
+    const result = await apiRequest<{ message?: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: payload,
+    });
+
+    if (!result.success) return { success: false, error: result.error };
+
+    return {
+      success: true,
+      data: null,
+      message: result.data?.message || 'Password reset successful',
     };
   }
 }
