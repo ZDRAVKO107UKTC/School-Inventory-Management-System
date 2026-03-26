@@ -89,14 +89,19 @@ const approveRequest = async (req, res) => {
     try {
         const { id } = req.params;
         const approverId = req.user.userId;
+        const actorRole = req.user.role;
 
-        const request = await requestService.approveRequest(id, approverId);
+        const request = await requestService.approveRequest(id, approverId, actorRole);
 
         return res.status(200).json({
             message: 'Request approved successfully',
             request
         });
     } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
         if (error.message === 'Request not found') {
             return res.status(404).json({ message: error.message });
         }
@@ -121,14 +126,19 @@ const rejectRequest = async (req, res) => {
 
         // SANITIZATION: Clean the rejection reason
         const sanitizedReason = reason ? xss(reason) : '';
+        const actorRole = req.user.role;
 
-        const request = await requestService.rejectRequest(id, rejectorId, sanitizedReason);
+        const request = await requestService.rejectRequest(id, rejectorId, sanitizedReason, actorRole);
 
         return res.status(200).json({
             message: 'Request rejected successfully',
             request
         });
     } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
         if (error.message === 'Request not found') {
             return res.status(404).json({ message: error.message });
         }

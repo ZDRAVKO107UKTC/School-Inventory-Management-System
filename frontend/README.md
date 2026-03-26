@@ -1,67 +1,141 @@
 # School Inventory Management System - Frontend
 
-**Status**: 🎨 **Design & Architecture Phase** (API-Ready, No Functionality Implemented)
+**Status**: 🎨 **Design & Component Architecture Phase** (API-Ready, No Functional Implementation)
 
-A premium, non-traditional SaaS-quality frontend for a school inventory management system. Built with React, TypeScript, Tailwind CSS, and Framer Motion.
+A premium React + TypeScript frontend for school inventory management. Built with Vite, Tailwind CSS, Framer Motion, and Zustand. API contracts are ready to connect to Node.js/Express backend.
+
+## Table of Contents
+
+- [Project Vision](#-project-vision)
+- [Architecture](#️-architecture-overview)
+- [Design System](#-design-system)
+- [API Contracts](#-api-ready-architecture)
+- [Setup & Development](#-getting-started)
+- [Integration Guide](#-backend-integration-guide)
+- [Type Safety](#-typescript--type-safety)
 
 ## 🎯 Project Vision
 
-Two user roles with completely different experiences:
+**Two distinct user experiences:**
 
-- **Students/Staff**: Browse equipment, request items, track borrowing history
-- **Administrators**: Manage inventory, approve requests, view analytics, scan QR codes
+1. **Students/Staff** (Limited Access)
+   - Browse available equipment with photos & specs
+   - Submit borrow requests with date selection
+   - Track active borrowing history & return dates
+   - View request status (pending → approved → returned)
+
+2. **Administrators** (Full Access)
+   - Inventory management (add/edit/delete equipment)
+   - Request approval workflow with notes
+   - System analytics & reports
+   - Export data (CSV, PDF, Google Sheets)
+   - User management & role assignment
 
 ## 🏗️ Architecture Overview
 
-### Current Phase
+### Current Development Phase
 
-✅ Design system tokens & color palettes  
-✅ Component library structure (UI primitives)  
-✅ Authentication page UI (Login/Signup)  
-✅ API service contracts (TypeScript DTOs)  
-✅ Zustand store placeholders  
-✅ Framer Motion animation structure  
-⏳ **No functional implementation yet** — Ready to connect to Node.js/TS backend
+✅ Design system with color tokens, typography, spacing  
+✅ Component library (UI primitives, forms, layouts)  
+✅ Authentication UI components (dark/light mode)  
+✅ API service layer with TypeScript contracts  
+✅ Zustand store structure for state management  
+✅ Framer Motion animation setup  
+⏳ **Backend integration** — Ready to connect to API
 
 ### Project Structure
 
 ```
-school-inventory-frontend/
+frontend/
 ├── src/
 │   ├── components/
-│   │   ├── ui/                    # Reusable UI primitives
-│   │   │   ├── Button.tsx
-│   │   │   ├── Input.tsx
+│   │   ├── ui/                      # Reusable UI components
+│   │   │   ├── Button.tsx           # Primary, secondary, outline variants
+│   │   │   ├── Input.tsx            # Text, password, email inputs
+│   │   │   ├── Card.tsx             # Container component
+│   │   │   ├── Modal.tsx
+│   │   │   ├── Select.tsx
 │   │   │   └── ...
-│   │   └── auth/                  # Auth-specific components
-│   │       ├── ThemeToggle.tsx
-│   │       ├── InteractiveBackground.tsx
-│   │       ├── LoginForm.tsx
-│   │       ├── SignupForm.tsx
-│   │       └── OAuthButtons.tsx
-│   ├── features/                  # Feature modules (placeholder structure)
-│   │   ├── inventory/
-│   │   ├── requests/
-│   │   ├── admin/
-│   │   └── analytics/
+│   │   ├── auth/                    # Auth-specific components
+│   │   │   ├── LoginForm.tsx
+│   │   │   ├── SignupForm.tsx
+│   │   │   ├── OAuthButtons.tsx
+│   │   │   ├── ThemeToggle.tsx
+│   │   │   └── InteractiveBackground.tsx
+│   │   ├── dashboard/               # Dashboard components
+│   │   │   ├── EquipmentCard.tsx
+│   │   │   ├── Virtual3DModel.tsx
+│   │   │   └── RequestList.tsx
+│   │   └── admin/                   # Admin-only components
+│   │       ├── UserManagement.tsx
+│   │       ├── InventoryEditor.tsx
+│   │       └── RequestApprovalPanel.tsx
+│   ├── features/                    # Feature modules (organized by domain)
+│   │   ├── inventory/               # Equipment browsing & details
+│   │   │   ├── pages/
+│   │   │   ├── components/
+│   │   │   └── hooks/
+│   │   ├── requests/                # Borrow request workflow
+│   │   │   ├── pages/
+│   │   │   ├── components/
+│   │   │   └── hooks/
+│   │   ├── admin/                   # Admin dashboard & management
+│   │   │   ├── pages/
+│   │   │   ├── components/
+│   │   │   └── hooks/
+│   │   └── analytics/               # Reports & analytics
+│   │       ├── pages/
+│   │       ├── components/
+│   │       └── hooks/
 │   ├── pages/
-│   │   └── AuthPage.tsx          # Main auth layout
-│   ├── stores/                    # Zustand state management
-│   │   └── authStore.ts
-│   ├── services/                  # API clients & contracts
-│   │   └── authService.ts
+│   │   ├── AuthPage.tsx             # Login/Signup page
+│   │   ├── DashboardPage.tsx        # Main inventory page
+│   │   ├── AdminPage.tsx            # Admin panel
+│   │   ├── NotFoundPage.tsx
+│   │   └── LoadingPage.tsx
+│   ├── services/                    # API clients & business logic
+│   │   ├── apiClient.ts             # HTTP wrapper
+│   │   ├── authService.ts           # Authentication
+│   │   ├── equipmentService.ts      # Inventory API
+│   │   ├── requestService.ts        # Borrow requests API
+│   │   └── userService.ts           # User management API
+│   ├── stores/                      # Zustand state management
+│   │   ├── authStore.ts             # Authentication state
+│   │   ├── equipmentStore.ts        # Inventory state
+│   │   ├── uiStore.ts               # UI state (theme, modals)
+│   │   └── notificationStore.ts     # Toast/notification state
 │   ├── hooks/
-│   │   └── useTheme.ts
+│   │   ├── useTheme.ts              # Dark/light mode
+│   │   ├── useAuth.ts               # Authentication logic
+│   │   ├── useAsync.ts              # Generic data fetching
+│   │   └── useNotification.ts       # Toast notifications
 │   ├── types/
-│   │   └── auth.ts
+│   │   ├── api.ts                   # API response types & utilities
+│   │   ├── auth.ts                  # Auth-related types (User, LoginRequest, etc.)
+│   │   ├── equipment.ts             # Equipment DTOs
+│   │   ├── request.ts               # Borrow request DTOs
+│   │   └── index.ts                 # Re-exports
+│   ├── utils/
+│   │   ├── constants.ts             # App-level constants
+│   │   ├── formatting.ts            # Date, currency, string formatting
+│   │   ├── validation.ts            # Form validation helpers
+│   │   └── errorHandling.ts         # Error parsing utilities
 │   ├── styles/
-│   │   └── globals.css            # Design tokens & Tailwind setup
-│   └── main.tsx                   # Entry point
-├── tailwind.config.js             # Extended theme config
-├── tsconfig.json                  # Path aliases
-├── vite.config.ts                 # Build configuration
+│   │   ├── globals.css              # Global styles & design tokens
+│   │   └── animations.css           # Framer Motion keyframes
+│   ├── config/
+│   │   ├── api.ts                   # API configuration
+│   │   └── theme.ts                 # Theme configuration
+│   ├── App.tsx                      # Root component
+│   └── main.tsx                     # Entry point
+├── public/
+│   ├── icons/                       # SVG icons
+│   └── logos/
+├── tailwind.config.js               # Extended Tailwind theme
+├── tsconfig.json                    # TypeScript config with path aliases
+├── vite.config.ts                   # Vite bundler config
+├── .env.example                     # Environment variables template
 ├── package.json
-├── index.html
 └── README.md
 ```
 
@@ -69,102 +143,143 @@ school-inventory-frontend/
 
 ### Color Palettes
 
-#### Dark Mode (Black → Purple Gradient)
+**Dark Mode** (Black → Purple Gradient)
 
-- Primary: `#0B0E27` → `#2D1B69`
-- Accent: `#A855F7` (Purple) / `#60A5FA` (Blue)
-- Text: `#E5ECF6` (primary), `#9FB0C7` (secondary)
+```css
+--color-dark-bg: #0b0e27; /* Background */
+--color-dark-accent: #2d1b69; /* Accent background */
+--color-dark-primary: #a855f7; /* Purple accent */
+--color-dark-secondary: #60a5fa; /* Blue accent */
+--color-dark-text-primary: #e5ecf6;
+--color-dark-text-secondary: #9fb0c7;
+```
 
-#### Light Mode (White → Cyan Gradient)
+**Light Mode** (White → Cyan Gradient)
 
-- Primary: `#FFFFFF` → `#E0F7FA`
-- Accent: `#06B6D4` (Cyan) / `#2563EB` (Blue)
-- Text: `#0B1020` (primary), `#475569` (secondary)
+```css
+--color-light-bg: #ffffff; /* Background */
+--color-light-accent: #e0f7fa; /* Accent background */
+--color-light-primary: #06b6d4; /* Cyan accent */
+--color-light-secondary: #2563eb; /* Blue accent */
+--color-light-text-primary: #0b1020;
+--color-light-text-secondary: #475569;
+```
 
 ### Typography
 
-- **Display**: Space Grotesk (headings)
-- **UI**: Plus Jakarta Sans (default)
-- **Monospace**: IBM Plex Mono (code/serial numbers)
+| Layer   | Font              | Use Case                   |
+| ------- | ----------------- | -------------------------- |
+| Display | Space Grotesk     | Page headings, hero text   |
+| UI      | Plus Jakarta Sans | Body text, buttons, labels |
+| Mono    | IBM Plex Mono     | Serial numbers, codes      |
 
-### Status Workflow Colors
+### Status Colors
 
 ```
-🟢 Available:      #22C55E / #4ADE80
-🔵 Checked Out:    #3B82F6 / #60A5FA
-🟡 Under Repair:   #F59E0B / #FBBF24
-⚫ Retired:         #475569 / #94A3B8
+🟢 Available:      #22C55E (bright) / #16A34A (dark)
+🔵 Checked Out:    #3B82F6 (bright) / #1D4ED8 (dark)
+🟡 Under Repair:   #F59E0B (bright) / #D97706 (dark)
+⚫ Retired:         #6B7280 (bright) / #374151 (dark)
+```
+
+### Spacing & Layout
+
+```
+xs: 4px,   sm: 8px,    md: 16px,   lg: 24px,   xl: 32px,   2xl: 48px
 ```
 
 ## 🔌 API-Ready Architecture
 
-### Authentication Service Contract
+### Service Layer Pattern
 
 ```typescript
-// Placeholder: awaiting backend implementation
-interface IAuthService {
-  loginWithEmail(credentials: LoginRequest): Promise<AuthResponse>;
-  signupWithEmail(credentials: SignupRequest): Promise<AuthResponse>;
-  initiateGoogleOAuth(): void;
-  initiateAppleOAuth(): void;
-  handleOAuthCallback(params: OAuthCallbackRequest): Promise<AuthResponse>;
-  requestPasswordReset(request: PasswordResetRequest): Promise<AuthResponse>;
-  resetPassword(request: PasswordResetConfirm): Promise<AuthResponse>;
-  logout(): Promise<AuthResponse>;
-  refreshSession(): Promise<AuthResponse>;
-  getCurrentUser(): Promise<AuthResponse>;
+// Example: authService.ts
+import apiClient from "./apiClient";
+import type { ApiResponse, User, LoginRequest } from "@/types";
+
+export const authService = {
+  async login(credentials: LoginRequest): Promise<ApiResponse<AuthToken>> {
+    return apiClient.post("/auth/login", credentials);
+  },
+
+  async getCurrentUser(): Promise<ApiResponse<User>> {
+    return apiClient.get("/auth/me");
+  },
+};
+```
+
+### API Client
+
+Located in `src/services/apiClient.ts`:
+
+```typescript
+const apiClient = {
+  async get<T>(url: string): Promise<ApiResponse<T>> { ... },
+  async post<T>(url: string, data: any): Promise<ApiResponse<T>> { ... },
+  async put<T>(url: string, data: any): Promise<ApiResponse<T>> { ... },
+  async delete<T>(url: string): Promise<ApiResponse<T>> { ... },
+};
+```
+
+### Backend API Contracts
+
+**Expected Backend Running On:** `http://localhost:5000`
+
+| Service   | Endpoint Prefix | Status   |
+| --------- | --------------- | -------- |
+| Auth      | `/auth`         | ✅ Ready |
+| Equipment | `/equipment`    | ✅ Ready |
+| Requests  | `/requests`     | ✅ Ready |
+| Admin     | `/admin`        | ✅ Ready |
+| Reports   | `/reports`      | ✅ Ready |
+| Documents | `/documents`    | ✅ Ready |
+
+See [Backend README](../backend/README.md) for complete endpoint documentation.
+
+## 🔐 Type Safety
+
+### Response Handling
+
+All API responses use discriminated unions for type-safe error handling:
+
+```typescript
+import type {
+  ApiResponse,
+  ApiSuccessResponse,
+  ApiErrorResponse,
+} from "@/types/api";
+import { isSuccess, getErrorMessage, getFieldErrors } from "@/types/api";
+
+// Type guards ensure proper error handling
+const response = await authService.login(credentials);
+
+if (isSuccess(response)) {
+  // TypeScript knows response.data exists
+  setUser(response.data);
+} else {
+  // TypeScript knows response.error exists
+  const fieldErrors = getFieldErrors(response);
+  updateFormErrors(fieldErrors);
 }
 ```
 
-### Expected Backend Endpoints
+### Pagination Types
 
-- `POST /auth/login`
-- `POST /auth/signup`
-- `GET /auth/google/authorize`
-- `GET /auth/apple/authorize`
-- `POST /auth/oauth/callback`
-- `POST /auth/password-reset/request`
-- `POST /auth/password-reset/confirm`
-- `POST /auth/logout`
-- `POST /auth/refresh`
-- `GET /auth/me`
+```typescript
+import type { PaginationParams, PaginationMeta } from "@/types/api";
+import { buildPaginationQuery } from "@/types/api";
 
-## 🎬 Interactive Features (Design-Only)
+// Build query string with type safety
+const query = buildPaginationQuery({
+  page: 1,
+  limit: 25,
+  search: "laptop",
+});
 
-### Login/Signup Page
-
-- 🌗 Dark/Light mode toggle with smooth 400–600ms transitions
-- 🎪 Animated gradient background (mesh gradients, floating shapes, particle system)
-- 💳 Premium card-based form with glass-morphism effect
-- 🔐 Email/password with password visibility toggle
-- 🎨 Google & Apple OAuth buttons (design-ready, no logic)
-- ⌚ Form validation states (error, success indicators)
-
-### Animations (Framer Motion Structure)
-
-```
-- @keyframes meshPulse: 10-12s hue-shift oscillation
-- @keyframes float: 15-20s sine-wave motion (shapes)
-- @keyframes glow: 3s pulse intensity cycle
-- @keyframes drift: 30-40s particle traversal
-```
-
-## 📦 Dependencies
-
-```json
-{
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "zustand": "^4.4.1",
-    "@tanstack/react-query": "^5.0.0",
-    "framer-motion": "^10.16.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.2.0",
-    "tailwindcss": "^3.3.0",
-    "vite": "^5.0.0"
-  }
+// Response types include pagination
+const response = await equipmentService.getAll(query);
+if (isSuccess(response)) {
+  console.log(response.pagination.totalPages);
 }
 ```
 
@@ -174,6 +289,7 @@ interface IAuthService {
 
 - Node.js ≥ 18.0.0
 - npm or yarn
+- Backend server running on `http://localhost:5000`
 
 ### Installation
 
@@ -181,25 +297,243 @@ interface IAuthService {
 # Install dependencies
 npm install
 
-# Start development server
+# Copy environment template
+cp .env.example .env
+
+# Start dev server (Vite with hot reload)
 npm run dev
+
+# Run type checking
+npx tsc --noEmit
 
 # Build for production
 npm run build
 
-# Type checking
-npm run type-check
+# Preview production build locally
+npm run preview
 ```
 
-### Environment Variables
+### Available Scripts
 
-Create a `.env` file:
+```bash
+npm run dev          # Start dev server (http://localhost:5173)
+npm run build        # Production build
+npm run preview      # Preview built site
+npm run type-check   # TypeScript type checking
+npm run lint         # ESLint check (if configured)
+npm run format       # Format code with Prettier (if configured)
+```
+
+### Environment Configuration
+
+Create `.env` file based on `.env.example`:
 
 ```env
-VITE_API_URL=http://localhost:3001
+# Backend API
+VITE_API_URL=http://localhost:5000
+
+# OAuth (optional for design phase)
 VITE_GOOGLE_CLIENT_ID=your-google-client-id
 VITE_APPLE_CLIENT_ID=your-apple-client-id
 ```
+
+## 🔗 Backend Integration Guide
+
+### 1. Setup Backend First
+
+```bash
+cd ../backend
+npm install
+npm run migrate
+npm run seed
+npm run dev  # Runs on http://localhost:5000
+```
+
+### 2. Connect API Client
+
+Edit `src/config/api.ts` to match backend URL:
+
+```typescript
+export const API_CONFIG = {
+  baseURL: process.env.VITE_API_URL || "http://localhost:5000",
+  timeout: 30000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+};
+```
+
+### 3. Implement Service Methods
+
+Replace placeholder implementations with actual API calls:
+
+```typescript
+// src/services/equipmentService.ts
+export const equipmentService = {
+  async getAll(query: string) {
+    // Actually call backend
+    return apiClient.get(`/equipment?${query}`);
+  },
+};
+```
+
+### 4. Connect Stores to Services
+
+Update Zustand store to populate from API:
+
+```typescript
+// src/stores/equipmentStore.ts
+export const useEquipmentStore = create((set) => ({
+  equipment: [],
+
+  async fetchEquipment() {
+    const response = await equipmentService.getAll("");
+    if (isSuccess(response)) {
+      set({ equipment: response.data });
+    }
+  },
+}));
+```
+
+### 5. Update Components to Use Data
+
+Replace mock data with store state:
+
+```typescript
+// src/pages/DashboardPage.tsx
+const equipment = useEquipmentStore(s => s.equipment);
+
+useEffect(() => {
+  useEquipmentStore.getState().fetchEquipment();
+}, []);
+
+return <>{equipment.map(item => <EquipmentCard key={item.id} {...item} />)}</>;
+```
+
+## 🧠 State Management (Zustand)
+
+### Authentication Store
+
+```typescript
+interface AuthStore {
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  error: string | null;
+
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  setUser: (user: User) => void;
+}
+```
+
+### Equipment Store
+
+```typescript
+interface EquipmentStore {
+  items: Equipment[];
+  totalItems: number;
+  currentPage: number;
+
+  fetchEquipment: (page: number, limit: number) => Promise<void>;
+  addEquipment: (item: Equipment) => void;
+  deleteEquipment: (id: number) => void;
+}
+```
+
+### UI Store
+
+```typescript
+interface UIStore {
+  theme: "light" | "dark";
+  isModalOpen: boolean;
+  notifications: Notification[];
+
+  toggleTheme: () => void;
+  openModal: (content: ReactNode) => void;
+  closeModal: () => void;
+  addNotification: (notification: Notification) => void;
+}
+```
+
+## 🎬 Features & Components
+
+### Completed (Design Phase)
+
+- ✅ Authentication page (login/signup forms, OAuth buttons)
+- ✅ Dark/light mode toggle with smooth animations
+- ✅ Interactive background (mesh gradients, floating particles)
+- ✅ Component library (buttons, inputs, cards, modals)
+- ✅ TypeScript type contracts for all services
+- ✅ Zustand store structure and patterns
+- ✅ Tailwind CSS design system with tokens
+
+### In Development
+
+- 🟠 Equipment list & detail pages
+- 🟠 Request creation workflow
+- 🟠 Admin dashboard & management panels
+- 🟠 Analytics & reporting views
+
+### Planned
+
+- 🔵 Real-time notifications (WebSocket)
+- 🔵 QR code scanning for quick item lookup
+- 🔵 Offline capability (service workers)
+- 🔵 Mobile app (React Native or Expo)
+
+## 📦 Key Dependencies
+
+```json
+{
+  "react": "^18.2.0",
+  "react-dom": "^18.2.0",
+  "react-router-dom": "^6.x",
+  "zustand": "^4.4.0",
+  "@tanstack/react-query": "^5.x",
+  "framer-motion": "^10.x",
+  "typescript": "^5.x",
+  "tailwindcss": "^3.x",
+  "vite": "^5.x"
+}
+```
+
+## 🧪 Testing
+
+```bash
+# Run tests (when test suite is set up)
+npm run test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Watch mode
+npm run test:watch
+```
+
+## 📚 Additional Resources
+
+- [Backend Documentation](../backend/README.md)
+- [Design System Reference](#-design-system)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [TailwindCSS Documentation](https://tailwindcss.com/docs)
+- [Framer Motion Documentation](https://www.framer.com/motion/)
+- [Zustand Documentation](https://github.com/pmndrs/zustand)
+
+## ✅ Development Checklist
+
+- [ ] Backend running on http://localhost:5000
+- [ ] `.env` file configured with `VITE_API_URL`
+- [ ] `npm install` dependencies
+- [ ] `npm run dev` starts dev server
+- [ ] API contracts in `src/types/` filled out
+- [ ] Service methods integrated with backend
+- [ ] Zustand stores connected to services
+- [ ] Components updated to use real data
+- [ ] Type checking passes: `npx tsc --noEmit`
+      VITE_APPLE_CLIENT_ID=your-apple-client-id
+
+````
 
 ## 📋 Component Inventory
 
@@ -290,7 +624,7 @@ function LoginForm() {
     </form>
   );
 }
-```
+````
 
 ## 🔄 State Management Approach
 

@@ -57,6 +57,11 @@ module.exports = (sequelize, DataTypes) => {
     room_id: {
       type: DataTypes.INTEGER,
       allowNull: true
+    },
+    is_sensitive: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     }
   }, {
     tableName: 'equipment',

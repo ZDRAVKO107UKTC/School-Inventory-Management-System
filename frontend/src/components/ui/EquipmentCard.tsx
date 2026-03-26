@@ -72,11 +72,12 @@ export const EquipmentCard: React.FC<Props> = ({ item, onExpand, isActive = true
       <motion.div
         layoutId={`equipment-card-${item.id}`}
         ref={cardRef}
-        className="relative h-[480px] rounded-[40px] cursor-pointer perspective-1000 origin-center group"
+        className="relative rounded-[40px] cursor-pointer perspective-1000 origin-center group"
         onClick={() => onExpand(item)}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         style={{
+          height: 'min(480px, 50vh)',
           rotateX,
           rotateY,
           transformStyle: "preserve-3d"
@@ -107,8 +108,17 @@ export const EquipmentCard: React.FC<Props> = ({ item, onExpand, isActive = true
               <h3 className="font-black text-xl text-slate-900 dark:text-white leading-none tracking-tight">
                 {item.name}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest opacity-70">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest opacity-70 flex items-center gap-2">
                 {item.type}
+                {((item as any).rooms?.length > 0) ? (
+                  <span className="text-[#0066cc] border-l border-slate-300 dark:border-slate-700 pl-2">
+                    {(item as any).rooms.length > 1 ? 'Various Rooms' : (item as any).rooms[0]}
+                  </span>
+                ) : item.room && (
+                  <span className="text-[#0066cc] border-l border-slate-300 dark:border-slate-700 pl-2">
+                    {item.room.name}
+                  </span>
+                )}
               </p>
             </div>
             <div className="flex items-center justify-between mt-auto">

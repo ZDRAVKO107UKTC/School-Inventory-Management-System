@@ -46,8 +46,8 @@ const main = async () => {
   console.log('[dev-up] seeding database if empty...');
   run('node', ['scripts/seed-if-empty.js'], backendDir);
 
-  console.log('[dev-up] starting backend microservices...');
-  const backendProc = start(npmCmd, ['run', 'microservices:start'], backendDir);
+  console.log('[dev-up] starting monolithic backend...');
+  const backendProc = start(npmCmd, ['run', 'start'], backendDir);
 
   await wait(3500);
 

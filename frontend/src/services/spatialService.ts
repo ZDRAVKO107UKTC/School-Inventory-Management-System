@@ -10,6 +10,7 @@ export interface Room {
   y: number | null;
   width: number | null;
   height: number | null;
+  type: 'active' | 'inactive' | 'storage';
 }
 
 export interface Floor {

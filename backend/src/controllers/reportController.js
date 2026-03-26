@@ -1,4 +1,5 @@
 const requestService = require('../services/requestService');
+const equipmentService = require('../services/equipmentService');
 const notificationService = require('../services/notificationService');
 const { getEmailProvider, isEmailEnabled, isEmailConfigured, getFromAddress } = require('../services/emailService');
 const { getStorageStatus } = require('../services/storageService');
@@ -6,6 +7,7 @@ const {
     exportRowsToGoogleSheet,
     getGoogleSheetsStatus
 } = require('../services/documentProviderService');
+const PDFDocument = require('pdfkit');
 const { Parser } = require('json2csv');
 const { resolvePagination, buildPaginationMeta, applyPaginationHeaders } = require('../utils/pagination');
 
@@ -88,17 +90,9 @@ const getHistoryReport = async (req, res) => {
 const exportReport = async (req, res) => {
     try {
         const report = await requestService.getHistoryReport(req.query);
+        const format = String(req.query.format || 'csv').toLowerCase();
 
-        const fields = ['id', 'request_date', 'due_date', 'return_date', 'status', 'quantity', 'equipment_name', 'requested_by', 'approver', 'return_condition'];
-        if (report.length === 0) {
-            const json2csvParser = new Parser({ fields });
-            const csv = json2csvParser.parse([]); // Header only
-            res.header('Content-Type', 'text/csv');
-            res.attachment(`inventory_report_empty_${new Date().getTime()}.csv`);
-            return res.send(csv);
-        }
-
-        const data = buildHistoryReportRows(report).map(item => ({
+        const rows = buildHistoryReportRows(report).map(item => ({
             id: item.id,
             request_date: item.request_date,
             due_date: item.due_date,
@@ -111,8 +105,54 @@ const exportReport = async (req, res) => {
             return_condition: item.return_condition
         }));
 
+        if (format === 'pdf') {
+            const fileName = `inventory_report_${Date.now()}.pdf`;
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+            const doc = new PDFDocument({ margin: 36, size: 'A4' });
+            doc.pipe(res);
+
+            doc.fontSize(16).text('Inventory History Report');
+            doc.moveDown(0.5);
+            doc.fontSize(10).fillColor('#555').text(`Generated: ${new Date().toISOString()}`);
+            doc.moveDown(1);
+            doc.fillColor('#000');
+
+            if (rows.length === 0) {
+                doc.fontSize(12).text('No records found for the selected filters.');
+                doc.end();
+                return;
+            }
+
+            rows.forEach((row, index) => {
+                doc.fontSize(11).text(`${index + 1}. Request #${row.id} - ${row.equipment_name}`);
+                doc.fontSize(9)
+                    .text(`Status: ${row.status} | Qty: ${row.quantity} | Requested by: ${row.requested_by} | Approver: ${row.approver}`)
+                    .text(`Request: ${row.request_date || 'N/A'} | Due: ${row.due_date || 'N/A'} | Return: ${row.return_date || 'N/A'}`)
+                    .text(`Return condition: ${row.return_condition}`);
+                doc.moveDown(0.7);
+
+                if (doc.y > 760) {
+                    doc.addPage();
+                }
+            });
+
+            doc.end();
+            return;
+        }
+
+        const fields = ['id', 'request_date', 'due_date', 'return_date', 'status', 'quantity', 'equipment_name', 'requested_by', 'approver', 'return_condition'];
+        if (report.length === 0) {
+            const json2csvParser = new Parser({ fields });
+            const csv = json2csvParser.parse([]); // Header only
+            res.header('Content-Type', 'text/csv');
+            res.attachment(`inventory_report_empty_${new Date().getTime()}.csv`);
+            return res.send(csv);
+        }
+
         const json2csvParser = new Parser({ fields });
-        const csv = json2csvParser.parse(data);
+        const csv = json2csvParser.parse(rows);
 
         res.header('Content-Type', 'text/csv');
         res.attachment(`inventory_report_${new Date().getTime()}.csv`);
@@ -121,6 +161,75 @@ const exportReport = async (req, res) => {
     } catch (error) {
         console.error('Export Error:', error);
         return res.status(500).json({ message: "Export failed" });
+    }
+};
+
+/**
+ * BE-025: Export Backup to Google Sheets
+ */
+const exportToGoogleSheets = async (req, res) => {
+    try {
+        const inventoryData = await equipmentService.getAllEquipment({}, false);
+        const historyData = await requestService.getHistoryReport({}, false);
+
+        const inventoryRows = (Array.isArray(inventoryData) ? inventoryData : (inventoryData.rows || [])).map((item) => [
+            item.id,
+            item.name,
+            item.type,
+            item.status,
+            item.totalQuantity ?? item.total_quantity ?? item.quantity ?? 0,
+            item.availableQuantity ?? item.available_quantity ?? item.quantity ?? 0
+        ]);
+
+        const historyRows = (Array.isArray(historyData) ? historyData : (historyData.rows || [])).map((req) => [
+            req.id,
+            req.request_date,
+            req.status,
+            req.quantity,
+            req.equipment?.name || 'N/A',
+            req.user?.username || 'System'
+        ]);
+
+        const targetSpreadsheetId = process.env.GOOGLE_SHEETS_DEFAULT_SPREADSHEET_ID || undefined;
+
+        const inventoryResult = await exportRowsToGoogleSheet({
+            spreadsheetId: targetSpreadsheetId,
+            sheetName: 'Inventory',
+            headers: ['ID', 'Name', 'Type', 'Status', 'Total Quantity', 'Available Quantity'],
+            rows: inventoryRows,
+            writeMode: 'replace'
+        });
+
+        await exportRowsToGoogleSheet({
+            spreadsheetId: targetSpreadsheetId || inventoryResult.spreadsheetId,
+            sheetName: 'Borrow History',
+            headers: ['ID', 'Request Date', 'Status', 'Quantity', 'Equipment', 'Requested By'],
+            rows: historyRows,
+            writeMode: 'replace'
+        });
+
+        return res.status(200).json({ 
+            message: "Google Sheets backup created successfully",
+            url: inventoryResult.spreadsheetUrl
+        });
+    } catch (error) {
+        console.error('Google Sheets Export Error:', error);
+        const googleSheetsStatus = getGoogleSheetsStatus();
+        const statusCode = error.statusCode || Number(error?.code || error?.status || error?.response?.status || error?.cause?.code) || (/not configured/i.test(error.message) ? 503 : 500);
+        const apiMessage = error?.response?.data?.error?.message || error?.cause?.message || error?.message || 'Unknown error';
+
+        if (statusCode === 401) {
+            return res.status(401).json({ message: `Google authentication failed: ${apiMessage}` });
+        }
+
+        if (statusCode === 403) {
+            return res.status(403).json({
+                message: `Google API permission denied: ${apiMessage}. Share the spreadsheet with the service account as Editor.`,
+                service_account_email: googleSheetsStatus.serviceAccountEmail || null
+            });
+        }
+
+        return res.status(statusCode).json({ message: `Backup to Google Sheets failed: ${apiMessage}` });
     }
 };
 
@@ -261,6 +370,7 @@ module.exports = {
     getUsageReport,
     getHistoryReport,
     exportReport,
+    exportToGoogleSheets,
     clearHistory,
     getNotificationSummary,
     runNotificationCycle,

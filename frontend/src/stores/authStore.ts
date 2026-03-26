@@ -11,7 +11,7 @@ export interface AuthStore {
   token: string | null;
   showForgotPassword: boolean;
   isOAuthLoading: boolean;
-  oauthProvider: 'google' | 'apple' | null;
+  oauthProvider: 'google' | 'telegram' | null;
   setMode: (mode: AuthMode) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -19,9 +19,11 @@ export interface AuthStore {
   setToken: (token: string | null) => void;
   setIsAuthenticated: (authenticated: boolean) => void;
   setShowForgotPassword: (show: boolean) => void;
-  setOAuthLoading: (loading: boolean, provider?: 'google' | 'apple') => void;
+  setOAuthLoading: (loading: boolean, provider?: 'google' | 'telegram') => void;
+  completeOAuthSession: (session: { accessToken: string; user: User }) => void;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (username: string, email: string, password: string) => Promise<boolean>;
+  forgotPassword: (email: string) => Promise<boolean>;
   hydrateSession: () => Promise<void>;
   logout: () => Promise<void>;
   resetAuthState: () => void;
@@ -77,6 +79,19 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setShowForgotPassword: (show) => set({ showForgotPassword: show }),
   setOAuthLoading: (loading, provider) =>
     set({ isOAuthLoading: loading, oauthProvider: provider || null }),
+  completeOAuthSession: (session) => {
+    saveSession(session.accessToken, session.user);
+    set({
+      isAuthenticated: true,
+      token: session.accessToken,
+      user: session.user,
+      error: null,
+      isLoading: false,
+      isOAuthLoading: false,
+      oauthProvider: null,
+      showForgotPassword: false,
+    });
+  },
 
   login: async (email, password) => {
     set({ isLoading: true, error: null });
@@ -116,6 +131,24 @@ export const useAuthStore = create<AuthStore>((set) => ({
       isAuthenticated: true,
       token: result.data.accessToken,
       user: result.data.user,
+      error: null,
+      showForgotPassword: false,
+    });
+    return true;
+  },
+
+  forgotPassword: async (email) => {
+    set({ isLoading: true, error: null });
+    const authService = getAuthService();
+    const result = await authService.requestPasswordReset({ email });
+
+    if (!result.success) {
+      set({ isLoading: false, error: result.error || 'Password reset request failed' });
+      return false;
+    }
+
+    set({
+      isLoading: false,
       error: null,
       showForgotPassword: false,
     });

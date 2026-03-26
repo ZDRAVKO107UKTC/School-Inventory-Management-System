@@ -1,0 +1,52 @@
+Grading Criteria 
+ 
+Functionality (40 points) 
+1. User authentication and role-based access control implemented (10 points) 
+2. Equipment catalog with searchable and filterable items (10 points) 
+3. Borrow/request and return system implemented (10 points) 
+4. Logging and tracking of item status and condition (5 points) 
+5. Exporting reports and borrowing history (5 points) 
+ 
+Backend (30 points) 
+1. Use of microservices for modular and scalable backend (10 points) 
+2. Proper database schema and migrations for users, equipment and requests (10 points) 
+3. Well-defined RESTful APIs for core entities (authentication, equipment, requests, reports) (10 points) 
+ 
+Additional Features (25 points) 
+1. QR code support for inventory check-in/out (5 points) 
+2. Email reminders (5 points) 
+3. Low stock and overdue notifications (5 points) 
+4. Usage analytics with Chart.js/Recharts (5 points) 
+5. Google Docs viewer or Cloudinary preview integration (5 points) 
+ 
+Frontend (15 points) 
+1. User-friendly interface for all roles (e.g., filtered dashboards) (5 points) 
+2. Role-based views/dashboards  (5 points) 
+3. Preview mode for items before submission/requests (5 points) 
+ 
+REST Endpoints (10 points) 
+1. Complete and functional implementation of all specified REST endpoints (10 points) 
+ 
+Security (15 points) 
+1. Secure storage of passwords using encryption techniques (5 points) 
+2. Validation of all user input to prevent common attacks (e.g., SQL injection, XSS)  (5 points) 
+
+3. Implementation of proper authorization mechanisms to control access to sensitive data (5 points) 
+ 
+Scalability (15 points) 
+1. Design considerations for scalability to handle a large number of users and items assignments (5 points) 
+2. Optimization of the database for performance and scalability (5 points) 
+3. Scalability of the microservices architecture to handle increased traffic and demand (5 points) 
+ 
+Code Quality (10 points) 
+1. Clean and well-organized code (3 points) 
+2. Consistent naming conventions and formatting (3 points) 
+3. Descriptive comments to explain complex code or functionality (2 points) 
+4. Modular structure and reuse of components (2 points) 
+ 
+Presentation (10 points) 
+1. 1. Clarity and coherence of the project presentation (5 points) 
+2. 2. Demonstration of key functionalities and features with clear explanations (5 points) 
+ 
+Total: 170 points 
+ 

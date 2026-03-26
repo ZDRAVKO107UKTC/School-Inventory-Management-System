@@ -1,4 +1,5 @@
 const reportRoutes = require('../routes/reportRoutes');
+const documentRoutes = require('../routes/documentRoutes');
 
 module.exports = {
   name: 'report-notification-service',
@@ -9,6 +10,10 @@ module.exports = {
     {
       mounts: ['/reports', '/api/reports'],
       router: reportRoutes
+    },
+    {
+      mounts: ['/admin/documents', '/api/admin/documents'],
+      router: documentRoutes
     }
   ]
 };

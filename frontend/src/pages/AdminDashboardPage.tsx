@@ -27,7 +27,11 @@ import {
   updateEquipmentAsAdmin,
   getAdminEquipmentHistory,
   getAdminUserHistory,
+  assignUserToRoom,
+  unassignUserFromRoom,
+  getUserRooms,
 } from '@/services/adminService';
+import { getFloors, type Floor as SpatialFloor } from '@/services/spatialService';
 import { getEquipmentList } from '@/services/inventoryService';
 import { updateEquipmentStatus } from '@/services/inventoryService';
 import type { Equipment, User, UserRole, BorrowRequest } from '@/types/auth';
@@ -82,6 +86,8 @@ const AdminDashboardPage: React.FC = () => {
     name: '', type: '', condition: 'good' as 'new' | 'good' | 'fair' | 'damaged',
     quantity: '1', serial_number: '', location: '', photo_url: ''
   });
+  const [floors, setFloors] = useState<SpatialFloor[]>([]);
+  const [userRoomModal, setUserRoomModal] = useState<{ user: User; rooms: any[] } | null>(null);
 
   const pendingRequests = useMemo(() => requests.filter(r => r.status === 'pending'), [requests]);
   const activeRequests  = useMemo(() => requests.filter(r => r.status === 'approved'), [requests]);
@@ -95,11 +101,12 @@ const AdminDashboardPage: React.FC = () => {
 
   const refreshAdminData = async () => {
     if (!token) return;
-    const [dashboardResult, usersResult, equipmentResult, requestsResult] = await Promise.all([
+    const [dashboardResult, usersResult, equipmentResult, requestsResult, floorsResult] = await Promise.all([
       getAdminDashboard(token),
       getUsersAsAdmin(token),
       getEquipmentList(),
       getRequestsAsAdmin(token),
+      getFloors(token),
     ]);
 
     if (dashboardResult.success && dashboardResult.data) {
@@ -113,10 +120,11 @@ const AdminDashboardPage: React.FC = () => {
       const payload = Array.isArray(requestsResult.data) ? requestsResult.data : requestsResult.data.requests;
       setRequests(Array.isArray(payload) ? payload : []);
     }
+    if (floorsResult.success && floorsResult.data) setFloors(floorsResult.data.floors);
   };
 
   useEffect(() => {
-    if (!isAuthenticated || !token) { navigate('/admin/login', { replace: true }); return; }
+    if (!isAuthenticated || !token) { navigate('/auth', { replace: true }); return; }
     if (user?.role !== 'admin') { navigate('/dashboard', { replace: true }); return; }
     refreshAdminData();
     const id = setInterval(refreshAdminData, 10000);
@@ -144,7 +152,7 @@ const AdminDashboardPage: React.FC = () => {
     await refreshAdminData();
   };
 
-  const onLogout = async () => { await logout(); navigate('/admin/login', { replace: true }); };
+  const onLogout = async () => { await logout(); navigate('/auth', { replace: true }); };
 
   const handleEditEquipmentSubmit = async () => {
     if (!editEquipmentModal || !token) return;
@@ -312,6 +320,21 @@ const AdminDashboardPage: React.FC = () => {
                                 </div>
                               )}
                             </div>
+                            {u.role === 'teacher' && (
+                              <Button className="w-full sm:w-auto" variant="secondary" size="sm"
+                                onClick={async () => {
+                                  if (!token) return;
+                                  const res = await getUserRooms(token, u.id);
+                                  if (res.success && res.data) {
+                                    setUserRoomModal({ user: u, rooms: res.data.assignedRooms });
+                                  } else {
+                                    setError(res.error || 'Failed to fetch user rooms');
+                                  }
+                                }}
+                                icon={<MapPin className="w-3 h-3" />}>
+                                Manage Rooms
+                              </Button>
+                            )}
                             <Button className="w-full sm:w-auto" variant="secondary" size="sm"
                               onClick={() => setHistoryModal({ type: 'user', id: u.id, title: u.username })}
                               icon={<History className="w-3 h-3" />}>
@@ -696,6 +719,105 @@ const AdminDashboardPage: React.FC = () => {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Room Assignment Modal */}
+      {userRoomModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setUserRoomModal(null)}>
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white">Assigned Rooms</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Teacher: {userRoomModal.user.username}</p>
+                </div>
+              </div>
+              <button onClick={() => setUserRoomModal(null)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Assigned Rooms List */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Current Assignments</h4>
+                <div className="max-h-40 overflow-y-auto pr-2 space-y-2">
+                  {userRoomModal.rooms.length === 0 ? (
+                    <p className="text-sm text-slate-500 italic py-2 text-center">No rooms assigned yet.</p>
+                  ) : (
+                    userRoomModal.rooms.map((room: any) => (
+                      <div key={room.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{room.name}</span>
+                        <button
+                          onClick={async () => {
+                            if (!token) return;
+                            const res = await unassignUserFromRoom(token, userRoomModal.user.id, room.id);
+                            if (res.success) {
+                              const updated = await getUserRooms(token, userRoomModal.user.id);
+                              if (updated.success && updated.data) setUserRoomModal({ ...userRoomModal, rooms: updated.data.assignedRooms });
+                            } else {
+                              setError(res.error || 'Failed to unassign room');
+                            }
+                          }}
+                          className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-md transition"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Add Assignment */}
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Add New Assignment</h4>
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="max-h-48 overflow-y-auto pr-2 space-y-4">
+                    {floors.map(floor => (
+                      <div key={floor.id} className="space-y-1.5">
+                        <p className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500">{floor.name}</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {floor.rooms.map(room => {
+                            const isAssigned = userRoomModal.rooms.some(r => r.id === room.id);
+                            return (
+                              <button
+                                key={room.id}
+                                disabled={isAssigned}
+                                onClick={async () => {
+                                  if (!token) return;
+                                  const res = await assignUserToRoom(token, userRoomModal.user.id, room.id);
+                                  if (res.success) {
+                                    const updated = await getUserRooms(token, userRoomModal.user.id);
+                                    if (updated.success && updated.data) setUserRoomModal({ ...userRoomModal, rooms: updated.data.assignedRooms });
+                                  } else {
+                                    setError(res.error || 'Failed to assign room');
+                                  }
+                                }}
+                                className={`px-2 py-1.5 rounded-lg border text-xs font-semibold text-left transition ${
+                                  isAssigned
+                                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-default opacity-50'
+                                    : 'border-blue-200 dark:border-blue-900/50 hover:border-blue-400 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                {room.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button variant="secondary" onClick={() => setUserRoomModal(null)}>Close</Button>
             </div>
           </div>
         </div>

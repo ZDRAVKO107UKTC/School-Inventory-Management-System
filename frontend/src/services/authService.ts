@@ -2,6 +2,8 @@ import type {
   ApiResult,
   AuthSession,
   LoginRequest,
+  PasswordResetRequest,
+  ResetPasswordRequest,
   SignupRequest,
   User,
 } from '@/types/auth';
@@ -10,12 +12,80 @@ import { apiRequest } from '@/services/apiClient';
 export interface IAuthService {
   loginWithEmail(credentials: LoginRequest): Promise<ApiResult<AuthSession>>;
   signupWithEmail(credentials: SignupRequest): Promise<ApiResult<AuthSession>>;
+  getGoogleAuthUrl(): Promise<ApiResult<{ url: string }>>;
+  exchangeGoogleCode(code: string): Promise<ApiResult<AuthSession>>;
+  getTelegramAuthUrl(): Promise<ApiResult<{ url: string }>>;
+  verifyTelegramAuth(payload: Record<string, string>): Promise<ApiResult<AuthSession>>;
   logout(refreshToken?: string): Promise<ApiResult<null>>;
   refreshSession(refreshToken?: string): Promise<ApiResult<AuthSession>>;
   getCurrentUser(token: string): Promise<ApiResult<User>>;
+  requestPasswordReset(payload: PasswordResetRequest): Promise<ApiResult<null>>;
+  resetPassword(payload: ResetPasswordRequest): Promise<ApiResult<null>>;
 }
 
 export class AuthService implements IAuthService {
+  async getGoogleAuthUrl(): Promise<ApiResult<{ url: string }>> {
+    const result = await apiRequest<{ url: string }>('/auth/google/url', {
+      method: 'GET',
+    });
+
+    if (!result.success || !result.data) return { success: false, error: result.error };
+    return { success: true, data: { url: result.data.url } };
+  }
+
+  async exchangeGoogleCode(code: string): Promise<ApiResult<AuthSession>> {
+    const result = await apiRequest<{
+      accessToken: string;
+      user: User;
+      message?: string;
+    }>('/auth/google/exchange', {
+      method: 'POST',
+      body: { code },
+    });
+
+    if (!result.success || !result.data) return { success: false, error: result.error };
+
+    return {
+      success: true,
+      data: {
+        accessToken: result.data.accessToken,
+        user: result.data.user,
+      },
+      message: result.data.message || 'Google authentication successful',
+    };
+  }
+
+  async getTelegramAuthUrl(): Promise<ApiResult<{ url: string }>> {
+    const result = await apiRequest<{ url: string }>('/auth/telegram/url', {
+      method: 'GET',
+    });
+
+    if (!result.success || !result.data) return { success: false, error: result.error };
+    return { success: true, data: { url: result.data.url } };
+  }
+
+  async verifyTelegramAuth(payload: Record<string, string>): Promise<ApiResult<AuthSession>> {
+    const result = await apiRequest<{
+      accessToken: string;
+      user: User;
+      message?: string;
+    }>('/auth/telegram/verify', {
+      method: 'POST',
+      body: payload,
+    });
+
+    if (!result.success || !result.data) return { success: false, error: result.error };
+
+    return {
+      success: true,
+      data: {
+        accessToken: result.data.accessToken,
+        user: result.data.user,
+      },
+      message: result.data.message || 'Telegram authentication successful',
+    };
+  }
+
   async loginWithEmail(credentials: LoginRequest): Promise<ApiResult<AuthSession>> {
     const result = await apiRequest<{
       accessToken: string;
@@ -128,6 +198,36 @@ export class AuthService implements IAuthService {
         email: result.data.user.email,
         role: result.data.user.role,
       },
+    };
+  }
+
+  async requestPasswordReset(payload: PasswordResetRequest): Promise<ApiResult<null>> {
+    const result = await apiRequest<{ message?: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: payload,
+    });
+
+    if (!result.success) return { success: false, error: result.error };
+
+    return {
+      success: true,
+      data: null,
+      message: result.data?.message || 'Password reset email sent',
+    };
+  }
+
+  async resetPassword(payload: ResetPasswordRequest): Promise<ApiResult<null>> {
+    const result = await apiRequest<{ message?: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: payload,
+    });
+
+    if (!result.success) return { success: false, error: result.error };
+
+    return {
+      success: true,
+      data: null,
+      message: result.data?.message || 'Password reset successful',
     };
   }
 }

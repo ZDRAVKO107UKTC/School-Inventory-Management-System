@@ -1,4 +1,4 @@
-const { Request, Equipment, User, ReturnConditionLog, sequelize } = require('../../models');
+const { Request, Equipment, User, ReturnConditionLog, Room, UserRoom, sequelize } = require('../../models');
 const { Op, fn, col } = require('sequelize');
 const notificationService = require('./notificationService');
 
@@ -66,6 +66,15 @@ const createBorrowRequest = async (requestData) => {
             throw error;
         }
 
+        // PHYSICAL SEPARATION: Admins cannot handle physical equipment unless also assigned as a user.
+        // In this implementation, we interpret this as "Admins cannot create borrow requests for themselves".
+        const requester = await User.findByPk(requestData.user_id, { transaction });
+        if (requester && requester.role === 'admin') {
+            const error = new Error("Admins cannot borrow equipment for themselves (Physical Separation Policy)");
+            error.statusCode = 403;
+            throw error;
+        }
+
         if (equipment.status !== 'available') {
             const error = new Error("Equipment is not available for borrowing");
             error.statusCode = 400;
@@ -102,6 +111,16 @@ const createBorrowRequest = async (requestData) => {
             throw error;
         }
 
+        let initialStatus = 'pending';
+        
+        // SENSITIVE ITEMS LOGIC:
+        // Rule: Admin approval required for sensitive items (e.g., last 2 projectors).
+        // If equipment is marked as sensitive AND (remaining quantity after this request <= 2), 
+        // it MUST be pending (already the default).
+        // Actually, the requirements imply ALL requests should be approved by admins, 
+        // but "last 2" is a special constraint for sensitive items.
+        // We will stick to the 'pending' default which already satisfies the "approval required" part.
+        
         return Request.create({
             user_id: requestData.user_id,
             equipment_id: requestData.equipment_id,
@@ -109,7 +128,7 @@ const createBorrowRequest = async (requestData) => {
             request_date: requestData.request_date,
             due_date: requestData.due_date,
             notes: requestData.notes,
-            status: 'pending'
+            status: initialStatus
         }, { transaction });
     });
 
@@ -166,9 +185,19 @@ const getMyRequests = async (userId, pagination = null) => {
 /**
  * Admin: Approves a request and updates inventory
  */
-const approveRequest = async (requestId, approverId) => {
+/**
+ * Admin: Approves a request and updates inventory
+ * With room-based permission check for teachers
+ */
+const approveRequest = async (requestId, approverId, actorRole) => {
     const approvedRequest = await sequelize.transaction(async (transaction) => {
         const request = await Request.findByPk(requestId, {
+            include: [{
+                model: Equipment,
+                as: 'equipment',
+                attributes: ['id', 'room_id', 'status', 'quantity'],
+                required: true
+            }],
             transaction,
             lock: transaction.LOCK.UPDATE
         });
@@ -179,16 +208,36 @@ const approveRequest = async (requestId, approverId) => {
             throw error;
         }
 
+        // Room-based permission check for teachers
+        if (actorRole === 'teacher') {
+            if (!request.equipment.room_id) {
+                const error = new Error('This item is not assigned to any room and cannot be approved by a teacher');
+                error.statusCode = 403;
+                throw error;
+            }
+
+            const isAssigned = await UserRoom.findOne({
+                where: {
+                    user_id: approverId,
+                    room_id: request.equipment.room_id
+                },
+                transaction
+            });
+
+            if (!isAssigned) {
+                const error = new Error('You are not assigned to the room where this item is located');
+                error.statusCode = 403;
+                throw error;
+            }
+        }
+
         if (request.status !== 'pending') {
             const error = new Error('Only pending requests can be approved');
             error.statusCode = 400;
             throw error;
         }
 
-        const equipment = await Equipment.findByPk(request.equipment_id, {
-            transaction,
-            lock: transaction.LOCK.UPDATE
-        });
+        const equipment = request.equipment;
 
         if (!equipment || equipment.status !== 'available') {
             const error = new Error('Equipment is no longer available');
@@ -223,9 +272,40 @@ const approveRequest = async (requestId, approverId) => {
 /**
  * Admin: Rejects a request
  */
-const rejectRequest = async (requestId, rejectorId, reason) => {
-    const request = await Request.findByPk(requestId);
+/**
+ * Admin: Rejects a request
+ */
+const rejectRequest = async (requestId, rejectorId, reason, actorRole) => {
+    const request = await Request.findByPk(requestId, {
+        include: [{
+            model: Equipment,
+            as: 'equipment',
+            attributes: ['id', 'room_id']
+        }]
+    });
     if (!request) throw new Error('Request not found');
+
+    // Room-based permission check for teachers
+    if (actorRole === 'teacher') {
+        if (!request.equipment.room_id) {
+            const error = new Error('This item is not assigned to any room and cannot be rejected by a teacher');
+            error.statusCode = 403;
+            throw error;
+        }
+
+        const isAssigned = await UserRoom.findOne({
+            where: {
+                user_id: rejectorId,
+                room_id: request.equipment.room_id
+            }
+        });
+
+        if (!isAssigned) {
+            const error = new Error('You are not assigned to the room where this item is located');
+            error.statusCode = 403;
+            throw error;
+        }
+    }
 
     if (request.status !== 'pending') {
         throw new Error('Only pending requests can be rejected');

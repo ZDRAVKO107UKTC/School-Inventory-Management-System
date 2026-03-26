@@ -53,8 +53,63 @@ const applyPaginationHeaders = (res, meta) => {
   });
 };
 
+/**
+ * Send paginated response
+ * @param {Object} res - Express response object
+ * @param {Array} data - Array of items
+ * @param {Object} paginationMeta - Pagination metadata
+ * @param {Object} options - { statusCode = 200, message = null }
+ */
+const sendPaginatedResponse = (res, data, paginationMeta, options = {}) => {
+  const { statusCode = 200, message = null } = options;
+  
+  applyPaginationHeaders(res, paginationMeta);
+  
+  const response = {
+    success: true,
+    data,
+    pagination: {
+      page: paginationMeta.page,
+      limit: paginationMeta.limit,
+      totalItems: paginationMeta.totalItems,
+      totalPages: paginationMeta.totalPages,
+      hasNextPage: paginationMeta.hasNextPage,
+      hasPreviousPage: paginationMeta.hasPreviousPage,
+    },
+  };
+
+  if (message) {
+    response.message = message;
+  }
+
+  return res.status(statusCode).json(response);
+};
+
+/**
+ * Send unpaginated response
+ * @param {Object} res - Express response object
+ * @param {Array} data - Array of items
+ * @param {Object} options - { statusCode = 200, message = null }
+ */
+const sendUnpaginatedResponse = (res, data, options = {}) => {
+  const { statusCode = 200, message = null } = options;
+
+  const response = {
+    success: true,
+    data,
+  };
+
+  if (message) {
+    response.message = message;
+  }
+
+  return res.status(statusCode).json(response);
+};
+
 module.exports = {
   resolvePagination,
   buildPaginationMeta,
-  applyPaginationHeaders
+  applyPaginationHeaders,
+  sendPaginatedResponse,
+  sendUnpaginatedResponse,
 };

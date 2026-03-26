@@ -14,6 +14,13 @@ export const exportInventoryCSV = async (token: string): Promise<ApiResult<strin
   return apiRequest<string>('/reports/export', { token });
 };
 
+export const exportToGoogleSheets = async (token: string): Promise<ApiResult<{ message: string, url: string }>> => {
+  return apiRequest<{ message: string, url: string }>('/reports/export/sheets', { 
+    method: 'POST',
+    token 
+  });
+};
+
 export const getFullHistoryReport = async (token: string): Promise<ApiResult<{ generated_at: string; data: any[] }>> => {
   return apiRequest<{ generated_at: string; data: any[] }>('/reports/history', { token });
 };

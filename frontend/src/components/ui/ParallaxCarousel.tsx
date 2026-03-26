@@ -32,7 +32,7 @@ export const ParallaxCarousel: React.FC<Props> = ({ items, onExpand }) => {
   return (
     <motion.div
       ref={containerRef}
-      className="relative w-full h-full flex items-center justify-center overflow-hidden perspective-2000"
+      className="relative w-full h-full flex items-center justify-center perspective-2000"
       onPanEnd={handlePanEnd}
       onWheel={(e) => {
         if (e.deltaY > 0) handleNext();
@@ -51,7 +51,7 @@ export const ParallaxCarousel: React.FC<Props> = ({ items, onExpand }) => {
         />
       </div>
 
-      <div className="relative w-full h-[600px] flex items-center justify-center preserve-3d">
+      <div className="relative w-full h-full flex items-center justify-center preserve-3d">
         <AnimatePresence mode="popLayout" initial={false}>
           {items.map((item, i) => {
             const position = i - index;

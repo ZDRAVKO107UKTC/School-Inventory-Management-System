@@ -7,7 +7,7 @@ module.exports = {
   dependsOn: ['auth-service', 'equipment-service'],
   routes: [
     {
-      mounts: ['/request', '/requests', '/api/request', '/api/requests'],
+      mounts: ['/request', '/requests', '/api/request', '/api/requests', '/manager'],
       router: requestRoutes
     }
   ]
