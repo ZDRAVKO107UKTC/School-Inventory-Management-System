@@ -52,7 +52,7 @@ export const BarcodeScannerModal: React.FC<Props> = ({ isOpen, onClose, onDetect
         },
         locate: true,
       },
-      (err) => {
+      (err: unknown) => {
         if (err) {
           console.error('Quagga init error:', err);
           setError('Could not access camera. Please check permissions.');
@@ -64,8 +64,8 @@ export const BarcodeScannerModal: React.FC<Props> = ({ isOpen, onClose, onDetect
       }
     );
 
-    Quagga.onDetected((data) => {
-      const code = data.codeResult.code;
+    Quagga.onDetected((data: { codeResult?: { code?: string } }) => {
+      const code = data?.codeResult?.code;
       if (code) {
         onDetected(code);
         onClose();

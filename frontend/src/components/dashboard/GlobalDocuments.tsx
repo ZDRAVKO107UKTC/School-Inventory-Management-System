@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FilePlus, Trash2, Calendar, FileType, Filter, Search, MoreVertical, ExternalLink } from 'lucide-react';
+import { FilePlus, Trash2, Calendar, FileType, Search, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DocumentPreview } from '@/components/ui/DocumentPreview';
 import { FileUploader } from '@/components/ui/FileUploader';
@@ -68,10 +68,10 @@ export const GlobalDocuments: React.FC<Props> = ({ token, isAdmin }) => {
         {isAdmin && (
           <Button 
             onClick={() => setIsUploadModalOpen(true)}
-            className="bg-[#0066cc] text-white flex items-center gap-2 text-xs py-2 h-auto"
+            className="bg-[#0066cc] text-white hover:bg-blue-700 dark:hover:bg-blue-600 px-5 h-11 text-[11px] font-bold tracking-wide normal-case whitespace-nowrap flex items-center gap-2 rounded-[12px] shadow-sm active:scale-95 transition-all"
           >
-            <FilePlus size={16} />
-            <span>Upload Document</span>
+            <FilePlus size={15} className="shrink-0" />
+            <span className="leading-none">Upload document</span>
           </Button>
         )}
       </div>
@@ -227,8 +227,9 @@ export const GlobalDocuments: React.FC<Props> = ({ token, isAdmin }) => {
 
               <div className="mt-8">
                 <Button 
+                  variant="secondary"
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="w-full py-4 text-[10px] font-black uppercase tracking-widest border border-[#d2d2d7] dark:border-[#38383a] bg-white dark:bg-[#2c2c2e] text-[#1d1d1f] dark:text-white hover:bg-[#f5f5f7] dark:hover:bg-[#38383a] transition-all rounded-2xl shadow-sm"
+                  className="w-full h-12 text-[10px] font-black uppercase tracking-widest"
                 >
                   Close Vault
                 </Button>

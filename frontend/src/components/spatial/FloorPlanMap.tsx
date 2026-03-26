@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ZoomIn, ZoomOut, Save, RotateCcw, Trash2, Plus } from 'lucide-react';
-import { Room, createRoom, updateRoom, deleteRoom } from '../../services/spatialService';
+import { Room, createRoom, updateRoom } from '../../services/spatialService';
 // @ts-ignore
 import PolyBool from 'polybooljs';
 
@@ -37,6 +37,10 @@ export const FloorPlanMap: React.FC<FloorPlanMapProps> = ({
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [tempType, setTempType] = useState<'active' | 'storage' | 'inactive'>('active');
+  const [uiError, setUiError] = useState<string | null>(null);
+  const [isCreateRoomModalOpen, setIsCreateRoomModalOpen] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
+  const [pendingPathData, setPendingPathData] = useState<string | null>(null);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });
@@ -158,10 +162,14 @@ export const FloorPlanMap: React.FC<FloorPlanMapProps> = ({
   };
 
   const handleSaveRoom = async () => {
-    if (points.length < 3) return alert('Click at least 3 points to form a room!');
+    if (points.length < 3) {
+      setUiError('Click at least 3 points to form a room.');
+      return;
+    }
 
     if (checkOverlap(points)) {
-      return alert('Error: Zones cannot overlap! Please adjust the boundaries.');
+      setUiError('Zones cannot overlap. Please adjust the boundaries.');
+      return;
     }
 
     const path_data = JSON.stringify(points);
@@ -172,26 +180,51 @@ export const FloorPlanMap: React.FC<FloorPlanMapProps> = ({
       if (res.success) {
         setPoints([]);
         onRoomSelect(null);
+        setUiError(null);
         onRefresh();
-      } else alert(res.error || 'Failed to update room');
+      } else {
+        setUiError(res.error || 'Failed to update room');
+      }
     } else {
-      // CREATE NEW
-      const name = prompt('Enter Room Name:', `Zone ${rooms.length + 1}`);
-      if (!name) return;
-
-      const res = await createRoom(token, {
-        floor_id: floorId,
-        name,
-        path_data,
-        type: tempType
-      });
-      if (res.success) {
-        setPoints([]);
-        setTempType('active');
-        onRoomSelect(null);
-        onRefresh();
-      } else alert(res.error || 'Failed to save room');
+      // CREATE NEW (in-design modal flow)
+      setPendingPathData(path_data);
+      setNewRoomName(`Room ${rooms.length + 1}`);
+      setIsCreateRoomModalOpen(true);
     }
+  };
+
+  const handleCreateRoomSubmit = async () => {
+    if (!pendingPathData) {
+      setUiError('Room boundary data is missing. Please redraw the room.');
+      return;
+    }
+
+    const trimmedName = newRoomName.trim();
+    if (!trimmedName) {
+      setUiError('Room name is required.');
+      return;
+    }
+
+    const res = await createRoom(token, {
+      floor_id: floorId,
+      name: trimmedName,
+      path_data: pendingPathData,
+      type: tempType
+    });
+
+    if (res.success) {
+      setPoints([]);
+      setTempType('active');
+      setPendingPathData(null);
+      setIsCreateRoomModalOpen(false);
+      setNewRoomName('');
+      setUiError(null);
+      onRoomSelect(null);
+      onRefresh();
+      return;
+    }
+
+    setUiError(res.error || 'Failed to save room');
   };
 
   const handleUpdateEditingRoom = async (updates: Partial<Room>) => {
@@ -199,8 +232,11 @@ export const FloorPlanMap: React.FC<FloorPlanMapProps> = ({
     const res = await updateRoom(token, editingRoom.id, updates);
     if (res.success) {
       setEditingRoom(null);
+      setUiError(null);
       onRefresh();
-    } else alert(res.error || 'Update failed');
+    } else {
+      setUiError(res.error || 'Update failed');
+    }
   };
 
   const calculateCentroid = (pathData: string | null) => {
@@ -260,6 +296,12 @@ export const FloorPlanMap: React.FC<FloorPlanMapProps> = ({
 
   return (
     <div className="relative w-full h-full min-h-[400px] bg-[#f8fbff] dark:bg-[#0f172a] rounded-[2rem] border border-[#d2d2d7] dark:border-[#1e293b] overflow-hidden shadow-2xl">
+      {uiError && (
+        <div className="absolute top-6 right-6 z-30 max-w-[360px] px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-[10px] font-black uppercase tracking-wider">
+          {uiError}
+        </div>
+      )}
+
       {/* HUD Toolbar */}
       <div className="absolute top-6 left-6 z-20 space-y-3">
         <div className="flex bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 shadow-xl">
@@ -436,6 +478,58 @@ export const FloorPlanMap: React.FC<FloorPlanMapProps> = ({
           {mode === 'draw' ? 'Vector Engine: Live' : 'Precision Selector: Active'}
         </span>
       </div>
+
+      <AnimatePresence>
+        {isCreateRoomModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.96 }}
+              className="w-full max-w-md rounded-2xl border border-[#d2d2d7] dark:border-[#334155] bg-white dark:bg-[#0f172a] p-5 shadow-2xl"
+            >
+              <h3 className="text-xs font-black uppercase tracking-widest text-[#1d1d1f] dark:text-white mb-3">Create Room</h3>
+              <p className="text-[10px] font-bold text-[#6b7280] dark:text-[#94a3b8] mb-3">Name this room to save it into the selected floor plan.</p>
+              <input
+                value={newRoomName}
+                onChange={(e) => setNewRoomName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleCreateRoomSubmit();
+                  }
+                }}
+                className="w-full h-11 rounded-xl border border-[#d2d2d7] dark:border-[#334155] bg-white dark:bg-[#111827] px-3 text-[12px] font-bold outline-none focus:ring-2 focus:ring-[#0066cc]/40"
+                placeholder="Room name"
+                autoFocus
+              />
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => {
+                    setIsCreateRoomModalOpen(false);
+                    setPendingPathData(null);
+                    setNewRoomName('');
+                  }}
+                  className="flex-1 h-10 rounded-xl border border-[#d2d2d7] dark:border-[#334155] text-[10px] font-black uppercase tracking-widest text-[#1d1d1f] dark:text-[#e5e7eb]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateRoomSubmit}
+                  className="flex-1 h-10 rounded-xl bg-[#0066cc] text-white text-[10px] font-black uppercase tracking-widest"
+                >
+                  Save Room
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

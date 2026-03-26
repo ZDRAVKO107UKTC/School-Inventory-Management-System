@@ -2,14 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Menu, Search, LogOut, Package, History, CalendarClock, Building, ChevronDown, Plus, Trash2, X, Download, ListTodo, Square, MinusCircle, Edit, CheckCircle2, ArchiveX, XCircle, FileJson, MousePointer2, LayoutPanelLeft, PenTool, MapPin, Archive, Clock, FileSpreadsheet, Loader2, ScanLine, QrCode, ClipboardCheck, Info, BarChart3, Bell } from 'lucide-react';
+import { Menu, Search, LogOut, Package, History, CalendarClock, Building, ChevronDown, Plus, Trash2, X, Download, ListTodo, Square, MinusCircle, Edit, CheckCircle2, ArchiveX, XCircle, FileJson, MousePointer2, LayoutPanelLeft, PenTool, MapPin, Archive, Clock, FileSpreadsheet, Loader2, ScanLine, QrCode, ClipboardCheck, Info, BarChart3, Bell, AlertCircle } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { ThemeToggle } from '@/components/auth/ThemeToggle';
 import { InteractiveBackground } from '@/components/auth/InteractiveBackground';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuthStore } from '@/stores/authStore';
-import { getEquipmentList, getEquipmentConditionHistory } from '@/services/inventoryService';
+import { getEquipmentList } from '@/services/inventoryService';
 import { BarcodeModal } from '@/components/ui/BarcodeModal';
 import { ConditionHistoryModal } from '@/components/ui/ConditionHistoryModal';
 import { BarcodeScannerModal } from '@/components/ui/BarcodeScannerModal';
@@ -81,6 +81,24 @@ const parsePhotos = (url: string | null): string[] => {
   } catch {
     return url ? [url] : [];
   }
+};
+
+const buildItemQrValue = (item: Partial<Equipment> & { id?: number; room?: { name?: string } | null; qr_code_value?: string | null }) => {
+  const infoParts = [
+    item.name ? `Name: ${item.name}` : null,
+    item.type ? `Type: ${item.type}` : null,
+    item.serial_number ? `Serial: ${item.serial_number}` : null,
+    item.condition ? `Condition: ${item.condition}` : null,
+    item.status ? `Status: ${item.status}` : null,
+    item.room?.name ? `Room: ${item.room.name}` : null,
+    item.location ? `Location: ${item.location}` : null,
+  ].filter(Boolean);
+
+  const query = infoParts.length > 0
+    ? `School Inventory Item | ${infoParts.join(' | ')}`
+    : `School Inventory Item ID: ${item.id ?? 'unknown'}`;
+
+  return `https://www.google.com/search?udm=50&q=${encodeURIComponent(query)}`;
 };
 
 const DashboardPage: React.FC = () => {
@@ -521,6 +539,14 @@ const DashboardPage: React.FC = () => {
   const groupedEquipment = useMemo(() => {
     if (requests === null) return [];
 
+    const approvedBorrowedByEquipmentId = requests.reduce<Record<number, number>>((acc, request) => {
+      if (request.status !== 'approved') return acc;
+      const equipmentId = Number(request.equipment_id);
+      const qty = Math.max(0, Number(request.quantity) || 0);
+      acc[equipmentId] = (acc[equipmentId] || 0) + qty;
+      return acc;
+    }, {});
+
     const filteredEquipment = equipment.filter(e => {
       const matchesSearch = e.name.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -552,14 +578,14 @@ const DashboardPage: React.FC = () => {
     const groups: Record<string, any> = {};
 
     filteredEquipment.forEach(item => {
-      const key = `${item.name}-${item.type}`;
+      const key = `${item.name}-${item.type}-${item.condition}`;
       if (!groups[key]) {
         groups[key] = { ...item, totalQuantity: 0, availableQuantity: 0, all_items: [], rooms: [] as string[] };
       }
-      groups[key].totalQuantity += 1;
-      const isRequestedByMe = requests.some(r => r.equipment_id === item.id && r.status === 'pending');
-      if (item.status === 'available' && !isRequestedByMe) {
-        groups[key].availableQuantity += 1;
+      const itemQuantity = Math.max(0, Number(item.quantity) || 0);
+      groups[key].totalQuantity += itemQuantity;
+      if (item.status === 'available') {
+        groups[key].availableQuantity += itemQuantity;
         groups[key].id = item.id;
       }
       groups[key].all_items.push(item);
@@ -567,6 +593,15 @@ const DashboardPage: React.FC = () => {
         groups[key].rooms.push(item.room.name);
       }
     });
+
+    Object.values(groups).forEach((group: any) => {
+      const borrowedUnits = group.all_items.reduce((sum: number, item: Equipment) => {
+        return sum + (approvedBorrowedByEquipmentId[item.id] || 0);
+      }, 0);
+
+      group.totalQuantity += borrowedUnits;
+    });
+
     return Object.values(groups) as GroupedEquipment[];
   }, [equipment, requests, selectedRoomId, showAllUnits, floors, currentFloorId, searchTerm]);
 
@@ -583,13 +618,6 @@ const DashboardPage: React.FC = () => {
     const due = new Date(now);
     due.setDate(now.getDate() + 7);
 
-    const _result = await submitBorrowRequest(token, {
-      equipment_id: equipmentId,
-      quantity: 1,
-      request_date: now.toISOString(),
-      due_date: due.toISOString(),
-      notes: 'Requested from spatial dashboard',
-    });
     try {
       const _result = await submitBorrowRequest(token, {
         equipment_id: equipmentId,
@@ -640,6 +668,58 @@ const DashboardPage: React.FC = () => {
 
   const currentFloor = floors.find(f => f.id === currentFloorId);
 
+  const selectedItemAvailability = useMemo(() => {
+    if (!selectedItem) return null;
+
+    const sameGear = equipment.filter(
+      (item) => item.name === selectedItem.name && item.type === selectedItem.type
+    );
+
+    const approvedBorrowedByEquipmentId = (requests || []).reduce<Record<number, number>>((acc, request) => {
+      if (request.status !== 'approved') return acc;
+      const equipmentId = Number(request.equipment_id);
+      const qty = Math.max(0, Number(request.quantity) || 0);
+      acc[equipmentId] = (acc[equipmentId] || 0) + qty;
+      return acc;
+    }, {});
+
+    if (sameGear.length === 0) {
+      const fallbackQty = Math.max(0, Number((selectedItem as any).quantity) || 0);
+      return {
+        available: selectedItem.availableQuantity ?? fallbackQty,
+        total: selectedItem.totalQuantity ?? fallbackQty,
+      };
+    }
+
+    const total = sameGear.reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0), 0);
+    const available = sameGear.reduce((sum, item) => {
+      if (item.status !== 'available') return sum;
+      return sum + Math.max(0, Number(item.quantity) || 0);
+    }, 0);
+
+    const borrowed = sameGear.reduce((sum, item) => {
+      return sum + (approvedBorrowedByEquipmentId[item.id] || 0);
+    }, 0);
+
+    return { available, total: total + borrowed };
+  }, [selectedItem, equipment, requests]);
+
+  const roomLocationOptions = useMemo(() => {
+    return floors
+      .slice()
+      .sort((a, b) => a.level - b.level)
+      .flatMap((floor) =>
+        floor.rooms
+          .filter((room) => room.type !== 'inactive')
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((room) => ({
+            id: room.id,
+            label: `${floor.name} - ${room.name}`,
+          }))
+      );
+  }, [floors]);
+
   const ManagementPanel = (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="p-4 sm:p-6 border-b border-[#f5f5f7] dark:border-[#303030] shrink-0 space-y-6">
@@ -671,7 +751,7 @@ const DashboardPage: React.FC = () => {
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6">
         {mgmtTab === 'spatial' && (
           <div className="space-y-6">
-            {isAdmin && (
+            {isAdmin && floors.length > 0 && (
               <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner">
                 <button
                   onClick={() => setMapMode('select')}
@@ -681,7 +761,8 @@ const DashboardPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setMapMode('draw')}
-                  className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${mapMode === 'draw' ? 'bg-indigo-500 shadow-lg text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                  disabled={floors.length === 0}
+                  className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${mapMode === 'draw' && floors.length > 0 ? 'bg-indigo-500 shadow-lg text-white' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   <PenTool size={14} /> Vector Drawing
                 </button>
@@ -689,26 +770,36 @@ const DashboardPage: React.FC = () => {
             )}
 
             <div className="space-y-2">
-              {floors.map(floor => (
-                <div key={floor.id} className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all ${currentFloorId === floor.id ? 'bg-[#0066cc] text-white shadow-lg' : 'bg-[#f5f5f7] dark:bg-[#1d1d1f] text-[#1d1d1f] dark:text-[#f5f5f7]'}`}>
-                  <button onClick={() => { setCurrentFloorId(floor.id); setSelectedRoomId(null); }} className="flex-1 text-left">
-                    <span className="text-xs font-bold uppercase">{floor.name}</span>
-                  </button>
-                  <div className="flex gap-1">
-                    <button onClick={() => setEditFloorModal(floor)} className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
-                      <Edit size={12} />
-                    </button>
-                    <button onClick={() => { setCurrentFloorId(floor.id); setSelectedRoomId(null); }} className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
-                      <Building size={14} />
-                    </button>
-                    {isAdmin && (
-                      <button onClick={() => handleDeleteFloor(floor.id)} className="p-1.5 rounded-lg hover:bg-rose-500/20 text-rose-500 transition-colors">
-                        <Trash2 size={12} />
-                      </button>
-                    )}
+              {floors.length === 0 ? (
+                <div className="p-6 rounded-2xl border-2 border-dashed border-[#d2d2d7] dark:border-[#303030] flex flex-col items-center justify-center text-center space-y-3">
+                  <Building size={32} className="text-[#86868b] opacity-50" />
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#86868b] mb-1">No Floors Created</p>
+                    <p className="text-[8px] text-[#86868b]">Create a floor first to start drawing zones</p>
                   </div>
                 </div>
-              ))}
+              ) : (
+                floors.map(floor => (
+                  <div key={floor.id} className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all ${currentFloorId === floor.id ? 'bg-[#0066cc] text-white shadow-lg' : 'bg-[#f5f5f7] dark:bg-[#1d1d1f] text-[#1d1d1f] dark:text-[#f5f5f7]'}`}>
+                    <button onClick={() => { setCurrentFloorId(floor.id); setSelectedRoomId(null); }} className="flex-1 text-left">
+                      <span className="text-xs font-bold uppercase">{floor.name}</span>
+                    </button>
+                    <div className="flex gap-1">
+                      <button onClick={() => setEditFloorModal(floor)} className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+                        <Edit size={12} />
+                      </button>
+                      <button onClick={() => { setCurrentFloorId(floor.id); setSelectedRoomId(null); }} className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+                        <Building size={14} />
+                      </button>
+                      {isAdmin && (
+                        <button onClick={() => handleDeleteFloor(floor.id)} className="p-1.5 rounded-lg hover:bg-rose-500/20 text-rose-500 transition-colors">
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
               {isAdmin && (
                 <button onClick={handleCreateFloor} className="w-full py-3 border-2 border-dashed border-[#d2d2d7] dark:border-[#303030] rounded-xl flex items-center justify-center gap-2 text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] hover:border-[#86868b] transition-all text-[9px] font-black uppercase tracking-widest">
                   <Plus size={14} /> New Floor
@@ -911,29 +1002,31 @@ const DashboardPage: React.FC = () => {
                     <Input className="flex-1 text-[11px] h-10 rounded-xl bg-white dark:bg-[#2c2c2e]" placeholder="Serial Number (Optional)" value={newEquipment.serial_number || ''} onChange={e => setNewEquipment(p => ({ ...p, serial_number: e.target.value }))} />
                     <Input className="w-full sm:w-20 text-[11px] h-10 rounded-xl bg-white dark:bg-[#2c2c2e]" type="number" placeholder="Qty" value={newEquipment.quantity} onChange={e => setNewEquipment(p => ({ ...p, quantity: parseInt(e.target.value) || 1 }))} />
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase text-[#86868b] tracking-widest">Condition</p>
                     <select
                       value={newEquipment.condition}
                       onChange={e => setNewEquipment(p => ({ ...p, condition: e.target.value as any }))}
-                      className="flex-1 h-10 rounded-xl bg-white dark:bg-[#2c2c2e] border border-[#d2d2d7] dark:border-[#303030] px-3 text-[11px] font-bold outline-none"
+                      className="w-full h-12 px-4 rounded-[10px] bg-white dark:bg-[#2c2c2e] border border-[#d2d2d7] dark:border-[#303030] text-[10px] font-black uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
                     >
                       <option value="new">Brand New</option>
                       <option value="good">Good Condition</option>
                       <option value="fair">Fair / Used</option>
                       <option value="damaged">Damaged / Repair</option>
                     </select>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase text-[#86868b] tracking-widest ml-1 flex items-center gap-1">
+                      <Building size={10} /> Spatial Assignment
+                    </p>
                     <select
                       value={newEquipment.room_id || ''}
                       onChange={e => setNewEquipment(p => ({ ...p, room_id: e.target.value ? parseInt(e.target.value) : null }))}
-                      className="flex-1 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-300/30 px-3 text-[11px] font-black uppercase text-[#0066cc] outline-none"
+                      className="w-full h-12 px-4 rounded-[10px] bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-900/30 text-[#0066cc] text-[10px] font-black uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
                     >
-                      <option value="">Lobby (No Room)</option>
-                      {floors.map(f => (
-                        <optgroup key={f.id} label={f.name}>
-                          {f.rooms.filter(r => r.type !== 'inactive').map(r => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
-                          ))}
-                        </optgroup>
+                      <option value="">Unassigned (No Room)</option>
+                      {roomLocationOptions.map((room) => (
+                        <option key={room.id} value={room.id}>{room.label}</option>
                       ))}
                     </select>
                   </div>
@@ -1173,8 +1266,17 @@ const DashboardPage: React.FC = () => {
                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#86868b', fontWeight: 'bold' }} width={100} />
                     <Tooltip
                       cursor={{ fill: 'transparent' }}
-                      itemStyle={{ color: '#0066cc', fontWeight: 'bold' }}
-                      contentStyle={{ borderRadius: '12px', border: '1px solid #d2d2d7', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 'bold' }}
+                      formatter={(value) => [String(value ?? 0), 'Borrow Count']}
+                      labelStyle={{ color: theme === 'dark' ? '#f8fafc' : '#111827', fontWeight: 800, fontSize: '11px' }}
+                      itemStyle={{ color: theme === 'dark' ? '#93c5fd' : '#0066cc', fontWeight: 800, fontSize: '10px' }}
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: theme === 'dark' ? '1px solid #334155' : '1px solid #d2d2d7',
+                        backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+                        fontSize: '10px',
+                        fontWeight: 800
+                      }}
                     />
                     <Bar dataKey="borrowCount" radius={[0, 4, 4, 0]} barSize={12}>
                       {usageChartData.map((_, index) => (
@@ -1385,16 +1487,26 @@ const DashboardPage: React.FC = () => {
                   </div>
 
                   <div className="flex-1 min-h-[350px] bg-white/50 dark:bg-black/20 rounded-[40px] border border-[#d2d2d7] dark:border-[#303030] overflow-hidden backdrop-blur-sm relative mb-4">
-                    <FloorPlanMap
-                      floorId={currentFloorId || 0}
-                      rooms={currentFloor?.rooms || []}
-                      isAdmin={isAdmin}
-                      token={token!}
-                      onRoomSelect={setSelectedRoomId}
-                      selectedRoomId={selectedRoomId}
-                      onRefresh={fetchData}
-                      mode={mapMode}
-                    />
+                    {floors.length === 0 ? (
+                      <div className="w-full h-full flex items-center justify-center flex-col gap-3">
+                        <AlertCircle size={40} className="text-[#86868b] opacity-40" />
+                        <div className="text-center space-y-2">
+                          <p className="text-[11px] font-black uppercase tracking-widest text-[#86868b]">Drawing Unavailable</p>
+                          <p className="text-[9px] text-[#86868b]">Create at least one floor to start drawing zones</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <FloorPlanMap
+                        floorId={currentFloorId || 0}
+                        rooms={currentFloor?.rooms || []}
+                        isAdmin={isAdmin}
+                        token={token!}
+                        onRoomSelect={setSelectedRoomId}
+                        selectedRoomId={selectedRoomId}
+                        onRefresh={fetchData}
+                        mode={mapMode}
+                      />
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -1473,7 +1585,7 @@ const DashboardPage: React.FC = () => {
                   <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('spatial'); }} className={`p-2 rounded-xl transition-colors ${mgmtTab === 'spatial' ? 'text-[#0066cc] bg-blue-50 dark:bg-blue-900/20' : 'text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800'}`}><Building size={20} /></button>
                   <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('approvals'); }} className={`p-2 rounded-xl transition-colors ${mgmtTab === 'approvals' ? 'text-[#0066cc] bg-blue-50 dark:bg-blue-100/10' : 'text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800'}`}><ListTodo size={20} /></button>
                   <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('storage'); }} className={`p-2 rounded-xl transition-colors ${mgmtTab === 'storage' ? 'text-[#0066cc] bg-blue-50 dark:bg-blue-100/10' : 'text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800'}`}><Archive size={20} /></button>
-                  <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('system'); }} className={`p-2 rounded-xl transition-colors ${mgmtTab === 'system' ? 'text-[#0066cc] bg-blue-50 dark:bg-blue-100/10' : 'text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800'}`}><BarChart3 className="w-5 h-5" /></button>
+                  <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('reports'); }} className={`p-2 rounded-xl transition-colors ${mgmtTab === 'reports' ? 'text-[#0066cc] bg-blue-50 dark:bg-blue-100/10' : 'text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800'}`}><BarChart3 className="w-5 h-5" /></button>
                   <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('notifications'); }} className={`p-2 rounded-xl transition-colors ${mgmtTab === 'notifications' ? 'text-[#0066cc] bg-blue-50 dark:bg-blue-100/10' : 'text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800'}`}><Bell size={20} /></button>
                   {isAdmin && <button onClick={() => { setIsSidebarCollapsed(false); setMgmtTab('system'); }} className="p-2 rounded-xl text-[#86868b] hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"><Square size={20} /></button>}
                   
@@ -1544,7 +1656,7 @@ const DashboardPage: React.FC = () => {
                     <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Asset ID</p><p className="font-mono text-sm">{selectedItem.serial_number || 'N/A'}</p></div>
                     <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Real Location</p><p className="text-sm font-black text-[#0066cc] uppercase tracking-wider">{(selectedItem as any).rooms?.length > 0 ? (selectedItem as any).rooms.join(', ') : selectedItem.room?.name || 'Unassigned Lobby'}</p></div>
                     <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Status</p><p className="text-sm uppercase font-black">{selectedItem.status}</p></div>
-                    <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Availability</p><p className="text-sm font-bold">{selectedItem.availableQuantity} / {selectedItem.totalQuantity}</p></div>
+                    <div><p className="text-[9px] uppercase font-bold text-[#86868b] mb-1">Availability</p><p className="text-sm font-bold">{selectedItemAvailability ? `${selectedItemAvailability.available} / ${selectedItemAvailability.total}` : `${selectedItem.availableQuantity} / ${selectedItem.totalQuantity}`}</p></div>
                   </div>
 
                   {/* Action Buttons */}
@@ -1676,7 +1788,7 @@ const DashboardPage: React.FC = () => {
                 <button onClick={() => setIsQRModalOpen(false)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><X size={16} /></button>
               </div>
               <div className="p-4 bg-white rounded-2xl border-2 border-[#f5f5f7] mb-6 shadow-inner">
-                 <QRCode value={(selectedItem as any).qr_code_value || `SIMS_ITEM_${selectedItem.id}`} size={200} />
+                 <QRCode value={buildItemQrValue(selectedItem as any)} size={200} />
               </div>
               <h4 className="font-bold text-center mb-1">{selectedItem.name}</h4>
               <p className="text-[10px] font-mono text-[#86868b] mb-6 uppercase">{selectedItem.serial_number || 'NO_SERIAL'}</p>
@@ -1761,13 +1873,9 @@ const DashboardPage: React.FC = () => {
                   onChange={e => setEditEquipmentModal({ ...editEquipmentModal, room_id: e.target.value ? parseInt(e.target.value) : null })}
                   className="w-full h-12 px-4 rounded-[10px] bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-900/30 text-[#0066cc] text-[10px] font-black uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
                 >
-                  <option value="">Unassigned Lobby</option>
-                  {floors.map(floor => (
-                    <optgroup key={floor.id} label={`Floor: ${floor.name}`} className="font-bold text-slate-500 bg-white dark:bg-slate-900">
-                      {floor.rooms.filter(room => room.type !== 'inactive').map(room => (
-                        <option key={room.id} value={room.id}>{room.name} ({room.type === 'storage' ? 'Storage' : 'Regular'})</option>
-                      ))}
-                    </optgroup>
+                  <option value="">Unassigned (No Room)</option>
+                  {roomLocationOptions.map((room) => (
+                    <option key={room.id} value={room.id}>{room.label}</option>
                   ))}
                 </select>
               </div>

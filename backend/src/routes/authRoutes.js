@@ -73,6 +73,7 @@ router.post("/forgot-password", validateForgotPassword, forgotPassword);
 router.post("/reset-password", validateResetPassword, resetPassword);
 router.post("/refresh", refresh);
 router.post("/logout", logout);
+router.get("/logout", logout);
 router.get("/google/url", googleAuthUrl);
 router.post("/google/exchange", googleExchange);
 router.get("/telegram/url", telegramAuthUrl);

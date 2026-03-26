@@ -98,6 +98,10 @@ const approveRequest = async (req, res) => {
             request
         });
     } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
         if (error.message === 'Request not found') {
             return res.status(404).json({ message: error.message });
         }
@@ -131,6 +135,10 @@ const rejectRequest = async (req, res) => {
             request
         });
     } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
         if (error.message === 'Request not found') {
             return res.status(404).json({ message: error.message });
         }

@@ -70,8 +70,12 @@ export const FileUploader: React.FC<Props> = ({
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`relative w-full p-6 flex flex-col items-center justify-center border-2 border-dashed rounded-2xl transition-all ${
-          isDragging ? 'border-[#0066cc] bg-[#0066cc]/5' : error ? 'border-red-400 bg-red-50 dark:bg-red-900/10' : 'border-[#d2d2d7] dark:border-[#303030] hover:bg-slate-50 dark:hover:bg-slate-800/50'
+        className={`relative w-full p-8 flex flex-col items-center justify-center border-2 border-dashed rounded-[20px] transition-all duration-300 ${
+          isDragging 
+            ? 'border-[#0066cc] bg-blue-50/80 dark:bg-blue-500/10 shadow-lg shadow-[#0066cc]/20' 
+            : error 
+            ? 'border-rose-400 bg-rose-50/80 dark:bg-rose-500/10' 
+            : 'border-[#d2d2d7] dark:border-[#303030] bg-white/30 dark:bg-black/20 hover:border-[#0066cc] hover:bg-blue-50/40 dark:hover:bg-blue-500/5 hover:shadow-md'
         }`}
       >
         <input 
@@ -84,32 +88,48 @@ export const FileUploader: React.FC<Props> = ({
         
         <AnimatePresence mode="wait">
           {uploading ? (
-            <motion.div key="uploading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-4 border-[#0066cc] border-t-transparent rounded-full animate-spin" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#0066cc]">Uploading...</p>
+            <motion.div key="uploading" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 border-3 border-[#0066cc]/30 border-t-[#0066cc] rounded-full animate-spin" />
+              <p className="text-[10px] font-black uppercase tracking-[0.5px] text-[#0066cc]">Uploading...</p>
             </motion.div>
           ) : error ? (
-            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2 text-center pointer-events-none">
-              <AlertCircle size={28} className="text-red-500 mb-1" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-red-600">Upload Failed</p>
-              <p className="text-[9px] font-medium text-red-400">{error}</p>
+            <motion.div key="error" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="flex flex-col items-center gap-3 text-center pointer-events-none">
+              <div className="p-3 bg-rose-100 dark:bg-rose-500/20 rounded-full">
+                <AlertCircle size={24} className="text-rose-600 dark:text-rose-400" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.5px] text-rose-600 dark:text-rose-400 mb-1">Upload Failed</p>
+                <p className="text-[9px] font-medium text-rose-500/80">{error}</p>
+              </div>
               <button 
                 onClick={(e) => {
                   e.preventDefault();
                   setError(null);
                 }} 
-                className="mt-2 px-3 py-1 bg-white border border-red-200 rounded-lg shadow-sm text-[10px] font-black text-red-600 hover:bg-red-50 uppercase z-10 pointer-events-auto transition-colors"
+                className="mt-2 px-4 py-2 bg-white dark:bg-[#2c2c2e] border border-rose-200 dark:border-rose-500/30 rounded-[10px] shadow-sm text-[10px] font-black text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 uppercase z-10 pointer-events-auto transition-all active:scale-95 tracking-[0.5px]"
               >
                 Try Again
               </button>
             </motion.div>
           ) : (
-            <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2 pointer-events-none text-center">
-              <UploadCloud size={32} className={`mb-2 transition-colors ${isDragging ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
-              <p className="text-xs font-bold text-[#1d1d1f] dark:text-[#f5f5f7]">
-                Drag & drop a file here, or click to browse
-              </p>
-              <p className="text-[9px] text-[#86868b] uppercase tracking-wider font-semibold">
+            <motion.div key="idle" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="flex flex-col items-center gap-3 pointer-events-none text-center">
+              <div className={`p-3 rounded-full transition-all ${isDragging ? 'bg-[#0066cc]/10' : 'bg-blue-50 dark:bg-blue-500/10'}`}>
+                <UploadCloud size={32} className={`transition-colors ${isDragging ? 'text-[#0066cc]' : 'text-[#1d1d1f] dark:text-[#f5f5f7]'}`} />
+              </div>
+              <div>
+                <p className="text-[11px] font-black text-[#1d1d1f] dark:text-[#f5f5f7] uppercase tracking-[0.5px] mb-1">
+                  {isDragging ? 'Drop your file here' : 'Drag & Drop or'}
+                </p>
+                {!isDragging && (
+                  <button 
+                    onClick={(e) => e.preventDefault()}
+                    className="text-[11px] font-black text-[#0066cc] uppercase tracking-[0.5px] hover:text-blue-600 pointer-events-auto transition-colors"
+                  >
+                    Click to Browse
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold mt-1">
                 {hintText}
               </p>
             </motion.div>

@@ -37,6 +37,7 @@ router.get('/my', authenticateToken, requestController.getUserRequests);
 
 // BE-016: GET all requests for admin/teacher moderation
 router.get('/', authenticateToken, authorizeRoles('admin', 'teacher'), requestController.getAdminRequests);
+router.get('/requests', authenticateToken, authorizeRoles('admin', 'teacher'), requestController.getAdminRequests);
 
 // Condition History
 router.get('/:id/condition-history', authenticateToken, authorizeRoles('admin'), requestController.getRequestConditionHistory);

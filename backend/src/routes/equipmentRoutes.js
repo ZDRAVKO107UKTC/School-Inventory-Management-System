@@ -129,7 +129,7 @@ router.post('/media/upload',
     equipmentController.uploadMedia
 );
 
-router.get('/:id/condition-history', authenticateToken, authorizeRoles('admin'), equipmentController.getConditionHistory);
+router.get('/:id/condition-history', authenticateToken, authorizeRoles('admin', 'teacher', 'student'), equipmentController.getConditionHistory);
 // Note: You had a duplicate route here for condition-history/ (trailing slash),
 // Express usually handles this automatically, but keeping it is fine.
 

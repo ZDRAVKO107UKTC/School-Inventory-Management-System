@@ -195,7 +195,8 @@ const approveRequest = async (requestId, approverId, actorRole) => {
             include: [{
                 model: Equipment,
                 as: 'equipment',
-                attributes: ['id', 'room_id', 'status', 'quantity']
+                attributes: ['id', 'room_id', 'status', 'quantity'],
+                required: true
             }],
             transaction,
             lock: transaction.LOCK.UPDATE
