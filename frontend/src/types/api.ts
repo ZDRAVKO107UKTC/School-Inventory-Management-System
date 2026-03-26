@@ -147,7 +147,7 @@ export const getPaginationFromHeaders = (headers: Headers): PaginationMeta | nul
   const page = headers.get('x-page');
   const limit = headers.get('x-limit');
   const totalItems = headers.get('x-total-count');
-  const totalPages = headers.get('x-total-pages');
+  const totalPagesHeader = headers.get('x-total-pages');
 
   if (!page || !limit || !totalItems) {
     return null;
@@ -157,7 +157,9 @@ export const getPaginationFromHeaders = (headers: Headers): PaginationMeta | nul
     page: parseInt(page, 10),
     limit: parseInt(limit, 10),
     totalItems: parseInt(totalItems, 10),
-    totalPages: parseInt(totalPages, 10),
+    totalPages: totalPagesHeader
+      ? parseInt(totalPagesHeader, 10)
+      : Math.max(1, Math.ceil(parseInt(totalItems, 10) / parseInt(limit, 10))),
     hasNextPage: headers.get('x-has-next-page') === 'true',
     hasPreviousPage: headers.get('x-has-prev-page') === 'true',
   };
