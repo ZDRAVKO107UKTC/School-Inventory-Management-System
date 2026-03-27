@@ -4,21 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98e050de-4084-4ab4-b303-e143b3da6b6e" name="Changes" comment="" />
-    <list default="true" id="98e050de-4084-4ab4-b303-e143b3da6b6e" name="Changes" comment="Refactor API route handling, improve service client configuration, and add admin login/dashboard routes.">
+    <list default="true" id="1ba65e3f-8ec6-4a8e-bb5f-338c401fde15" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/AUTH_IMPLEMENTATION.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/AUTH_IMPLEMENTATION.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/models/User.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/User.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/postman_collection.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/postman_collection.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/controllers/authController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/controllers/authController.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/routes/authRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/routes/authRoutes.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/services/authService.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/services/authService.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/auth/ForgotPasswordForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/auth/ForgotPasswordForm.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/AuthPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/AuthPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/services/authService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/services/authService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/stores/authStore.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/stores/authStore.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/types/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/types/auth.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/.env" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/microservices/gateway/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/microservices/gateway/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/vite.config.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,191 +18,63 @@
   </component>
   <component name="CopilotPersistence">
     <persistenceIdMap>
-      <entry key="_C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System" value="3AoPeXEVWgnLQZZWL7ELIP8Nsog" />
+      <entry key="_C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System" value="3BV7v9munq6jhMqJDMXouXNNoQE" />
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="348" />
-    <option name="cachedIndexableFilesCount" value="347" />
-    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
-  </component>
-  <component name="FileTemplateManagerImpl">
-    <option name="RECENT_TEMPLATES">
-      <list>
-        <option value="Dockerfile" />
-        <option value="HTTP Request" />
-        <option value="JavaScript File" />
-      </list>
-    </option>
+    <option name="cachedIndexableFilesCount" value="392" />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_BRANCH_BY_REPOSITORY">
-      <map>
-        <entry key="$PROJECT_DIR$" value="main" />
-      </map>
-    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory">{
-  &quot;lastFilter&quot;: {
-    &quot;state&quot;: &quot;OPEN&quot;,
-    &quot;assignee&quot;: &quot;ZDRAVKO107UKTC&quot;
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "ZDRAVKO107UKTC"
   }
-}</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/Tech-Academy-Gus-Fring/School-Inventory-Management-System.git&quot;,
-    &quot;accountId&quot;: &quot;4e316143-bf0e-412e-83ed-c3d27e941458&quot;
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Tech-Academy-Gus-Fring/School-Inventory-Management-System.git",
+    "accountId": "4e316143-bf0e-412e-83ed-c3d27e941458"
   }
-}</component>
-  <component name="HttpClientOnboardingState">{
-  &quot;isOnboardingCommentShown&quot;: true
-}</component>
+}]]></component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
   </component>
-  <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 3
-}</component>
-  <component name="ProjectId" id="3AoPeXEVWgnLQZZWL7ELIP8Nsog" />
-  <component name="ProjectLevelVcsManager">
-    <ConfirmationsSetting value="1" id="Add" />
-  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 7,
+  "fromUser": false
+}]]></component>
+  <component name="ProjectId" id="3BV7v9munq6jhMqJDMXouXNNoQE" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;Docker.backend/docker-compose.microservices.yml: Compose Deployment.executor&quot;: &quot;Run&quot;,
-    &quot;Docker.backend: Compose Deployment.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.All in security_test.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.All in test_equipment.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.All in test_log.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.security_test | #2.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.security_test | #3.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.security_test | 0. Login to get Token.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.security_test | 1. LOGIN AS ADMIN.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.security_test | 2. LOGIN AS STUDENT.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.test_equipment | Test Get Existing Equipment.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Node.js.app.js.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.authService.js.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.db.js.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.protectedRoutes.js.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.server.js.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.userRoutes.js.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;Additional-apies&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;BE-38&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.LLMConfigurable&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\zdrav\\Documents\\GitHub\\School-Inventory-Management-System\\frontend\\node_modules\\typescript\\lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "Docker.backend/docker-compose.microservices.yml: Compose Deployment.executor": "Run",
-    "Docker.backend: Compose Deployment.executor": "Run",
-    "HTTP Request.All in security_test.executor": "Run",
-    "HTTP Request.All in test_equipment.executor": "Run",
-    "HTTP Request.All in test_log.executor": "Run",
-    "HTTP Request.security_test | #2.executor": "Run",
-    "HTTP Request.security_test | #3.executor": "Run",
-    "HTTP Request.security_test | 0. Login to get Token.executor": "Run",
-    "HTTP Request.security_test | 1. LOGIN AS ADMIN.executor": "Run",
-    "HTTP Request.security_test | 2. LOGIN AS STUDENT.executor": "Run",
-    "HTTP Request.test_equipment | Test Get Existing Equipment.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Node.js.app.js.executor": "Run",
-    "Node.js.authService.js.executor": "Run",
-    "Node.js.db.js.executor": "Run",
-    "Node.js.protectedRoutes.js.executor": "Run",
-    "Node.js.server.js.executor": "Run",
-    "Node.js.userRoutes.js.executor": "Run",
     "RunOnceActivity.MCP Project settings loaded": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "Additional-apies",
+    "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "javascript.preferred.runtime.type.id": "node",
     "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "ml.llm.LLMConfigurable",
     "to.speed.mode.migration.done": "true",
-    "ts.external.directory.path": "C:\\Users\\zdrav\\Documents\\GitHub\\School-Inventory-Management-System\\frontend\\node_modules\\typescript\\lib",
     "vue.rearranger.settings.migration": "true"
-  },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;postgresql&quot;
-    ],
-    &quot;com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File&quot;: [
-      &quot;DotEnv&quot;
-    ]
   }
-}</component>
-  <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="D:\OTHER GAMES\stem_classroom_project\School-Inventory-Management-System\backend\microservices\services\auth-service\routes" />
-      <recent name="C:\Users\zdrav\Documents\GitHub\School-Inventory-Management-System" />
-      <recent name="C:\Users\zdrav\WebstormProjects\School-Inventory-Management-System\backend" />
-    </key>
-  </component>
-  <component name="RunManager" selected="HTTP Request.All in security_test">
-    <configuration name="All in security_test" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" path="$PROJECT_DIR$/security_test.http">
-      <method v="2" />
-    </configuration>
-    <configuration name="security_test | 1. LOGIN AS ADMIN" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$PROJECT_DIR$/security_test.http" executionIdentifier="1. LOGIN AS ADMIN" runType="Run single request">
-      <method v="2" />
-    </configuration>
-    <configuration name="security_test | 2. LOGIN AS STUDENT" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$PROJECT_DIR$/security_test.http" executionIdentifier="2. LOGIN AS STUDENT" index="2" runType="Run single request">
-      <method v="2" />
-    </configuration>
-    <configuration name="security_test | #2" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$PROJECT_DIR$/security_test.http" executionIdentifier="#2" index="2" runType="Run single request">
-      <method v="2" />
-    </configuration>
-    <configuration name="security_test | #3" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$PROJECT_DIR$/security_test.http" executionIdentifier="#3" index="3" runType="Run single request">
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="docker-deploy" factoryName="docker-compose.yml" temporary="true">
-      <deployment type="docker-compose.yml">
-        <settings />
-      </deployment>
-      <method v="2" />
-    </configuration>
-    <recent_temporary>
-      <list>
-        <item itemvalue="HTTP Request.security_test | 2. LOGIN AS STUDENT" />
-        <item itemvalue="HTTP Request.security_test | 1. LOGIN AS ADMIN" />
-        <item itemvalue="HTTP Request.security_test | #3" />
-        <item itemvalue="HTTP Request.security_test | #2" />
-        <item itemvalue="HTTP Request.All in security_test" />
-      </list>
-    </recent_temporary>
-  </component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -221,56 +84,17 @@
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="98e050de-4084-4ab4-b303-e143b3da6b6e" name="Changes" comment="" />
-      <created>1773256045985</created>
+      <changelist id="1ba65e3f-8ec6-4a8e-bb5f-338c401fde15" name="Changes" comment="" />
+      <created>1774562613985</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1773256045985</updated>
-      <workItem from="1773256047194" duration="7904000" />
-      <workItem from="1773308473548" duration="5833000" />
-      <workItem from="1773335835721" duration="3539000" />
-      <workItem from="1773646039312" duration="118000" />
-      <workItem from="1773646217742" duration="1358000" />
-      <workItem from="1773694522894" duration="7271000" />
-      <workItem from="1773848911931" duration="730000" />
-      <workItem from="1773850003050" duration="1117000" />
-      <workItem from="1773853492313" duration="5870000" />
-      <workItem from="1773916204350" duration="3290000" />
-      <workItem from="1773936542282" duration="1401000" />
-      <workItem from="1774212880658" duration="398000" />
-      <workItem from="1774217291610" duration="5593000" />
-      <workItem from="1774212880658" duration="6599000" />
-      <workItem from="1774441693295" duration="3064000" />
+      <updated>1774562613985</updated>
+      <workItem from="1774562616889" duration="5241000" />
     </task>
-    <task id="LOCAL-00001" summary="working auth">
-      <option name="closed" value="true" />
-      <created>1773271336919</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1773271336919</updated>
-    </task>
-    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="Vcs.Log.Tabs.Properties">
-    <option name="TAB_STATES">
-      <map>
-        <entry key="MAIN">
-          <value>
-            <State />
-          </value>
-        </entry>
-      </map>
-    </option>
-  </component>
-  <component name="VcsManagerConfiguration">
-    <MESSAGE value="working auth" />
-    <MESSAGE value="Document API request examples in `API_REQUESTS.md`." />
-    <option name="LAST_COMMIT_MESSAGE" value="Document API request examples in `API_REQUESTS.md`." />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
