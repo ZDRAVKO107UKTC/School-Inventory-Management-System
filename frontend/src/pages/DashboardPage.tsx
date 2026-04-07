@@ -242,13 +242,13 @@ const DashboardPage: React.FC = () => {
   const isAdmin = user?.role === 'admin';
   const isTeacher = user?.role === 'teacher';
   const isManager = isAdmin || isTeacher;
-  const managementTabs: Array<{ id: ManagementTab; label: string }> = [
-    { id: 'spatial', label: 'Spatial' },
-    { id: 'approvals', label: 'Approvals' },
-    { id: 'storage', label: 'Storage' },
-    { id: 'reports', label: 'Reports' },
-    { id: 'notifications', label: 'Alerts' },
-    ...(isAdmin ? [{ id: 'system' as const, label: 'Global' }] : []),
+  const managementTabs: Array<{ id: ManagementTab; label: string; description: string; icon: React.ReactNode }> = [
+    { id: 'spatial', label: 'Spatial', description: 'Floors and rooms', icon: <Building size={14} /> },
+    { id: 'approvals', label: 'Approvals', description: 'Borrow queue', icon: <ClipboardCheck size={14} /> },
+    { id: 'storage', label: 'Storage', description: 'Supplies and stock', icon: <Archive size={14} /> },
+    { id: 'reports', label: 'Reports', description: 'Usage analytics', icon: <BarChart3 size={14} /> },
+    { id: 'notifications', label: 'Alerts', description: 'Delivery settings', icon: <Bell size={14} /> },
+    ...(isAdmin ? [{ id: 'system' as const, label: 'Global', description: 'Admin controls', icon: <Square size={14} /> }] : []),
   ];
   const roleBadgeConfig = {
     admin: {
@@ -632,9 +632,9 @@ const DashboardPage: React.FC = () => {
   };
 
   const groupedEquipment = useMemo(() => {
-    if (requests === null) return [];
+    const requestList = requests ?? [];
 
-    const approvedBorrowedByEquipmentId = requests.reduce<Record<number, number>>((acc, request) => {
+    const approvedBorrowedByEquipmentId = requestList.reduce<Record<number, number>>((acc, request) => {
       if (request.status !== 'approved') return acc;
       const equipmentId = Number(request.equipment_id);
       const qty = Math.max(0, Number(request.quantity) || 0);
@@ -765,6 +765,115 @@ const DashboardPage: React.FC = () => {
   };
 
   const currentFloor = floors.find(f => f.id === currentFloorId);
+  const activeRooms = useMemo(
+    () => floors.flatMap(floor => floor.rooms).filter(room => room.type !== 'inactive'),
+    [floors]
+  );
+  const storageRooms = useMemo(
+    () => activeRooms.filter(room => room.type === 'storage'),
+    [activeRooms]
+  );
+  const visibleAvailableGear = useMemo(
+    () => groupedEquipment.reduce((acc, group) => acc + (group.availableQuantity || 0), 0),
+    [groupedEquipment]
+  );
+  const totalAvailableGear = useMemo(
+    () => equipment.reduce((sum, item) => item.status === 'available' ? sum + Math.max(0, Number(item.quantity) || 0) : sum, 0),
+    [equipment]
+  );
+  const pendingApprovalsCount = useMemo(
+    () => adminRequests.filter(request => request.status === 'pending').length,
+    [adminRequests]
+  );
+  const storageUnitsCount = useMemo(() => {
+    const storageRoomIds = new Set(storageRooms.map(room => room.id));
+    return equipment.reduce((sum, item) => {
+      if (item.room_id === null || !storageRoomIds.has(Number(item.room_id))) {
+        return sum;
+      }
+      return sum + Math.max(0, Number(item.quantity) || 0);
+    }, 0);
+  }, [equipment, storageRooms]);
+  const activeManagementTab = managementTabs.find(tab => tab.id === mgmtTab) ?? managementTabs[0];
+  const managementStats = useMemo(() => {
+    const primaryAvailableValue = showAllUnits ? totalAvailableGear : visibleAvailableGear;
+
+    return [
+      {
+        key: 'gear',
+        icon: <Package size={16} />,
+        label: showAllUnits ? 'All available gear' : 'Visible gear',
+        value: primaryAvailableValue,
+        color: 'bg-emerald-500',
+      },
+      {
+        key: 'queue',
+        icon: isManager ? <ClipboardCheck size={16} /> : <History size={16} />,
+        label: isManager ? 'Pending approvals' : 'My requests',
+        value: isManager ? pendingApprovalsCount : (requests?.length || 0),
+        color: 'bg-blue-500',
+      },
+      {
+        key: 'zones',
+        icon: mgmtTab === 'storage' ? <Archive size={16} /> : <Building size={16} />,
+        label: mgmtTab === 'storage' ? 'Storage rooms' : 'Mapped rooms',
+        value: mgmtTab === 'storage' ? storageRooms.length : activeRooms.length,
+        color: 'bg-amber-500',
+      },
+    ];
+  }, [activeRooms.length, isManager, mgmtTab, pendingApprovalsCount, requests, showAllUnits, storageRooms.length, totalAvailableGear, visibleAvailableGear]);
+  const activeManagementSummary = useMemo(() => {
+    switch (mgmtTab) {
+      case 'spatial':
+        return {
+          label: currentFloor ? currentFloor.name : 'No floor selected',
+          value: currentFloor ? currentFloor.rooms.filter(room => room.type !== 'inactive').length : activeRooms.length,
+          detail: currentFloor
+            ? 'Mapped rooms ready for assignment, zoning, and live room selection.'
+            : 'Create or select a floor to start organizing rooms on the map.',
+        };
+      case 'approvals':
+        return {
+          label: 'Approval queue',
+          value: pendingApprovalsCount,
+          detail: pendingApprovalsCount > 0
+            ? 'Pending borrow requests are waiting for a decision.'
+            : 'No requests are blocked right now. The queue is clear.',
+        };
+      case 'storage':
+        return {
+          label: 'Storage inventory',
+          value: storageUnitsCount,
+          detail: storageRooms.length > 0
+            ? `Stock is currently distributed across ${storageRooms.length} storage room${storageRooms.length === 1 ? '' : 's'}.`
+            : 'Add a storage room to start grouping spare devices and supplies.',
+        };
+      case 'reports':
+        return {
+          label: 'Reporting stream',
+          value: reportData.history.length || reportData.usage.length,
+          detail: 'Usage snapshots and full activity history are ready for export and review.',
+        };
+      case 'notifications':
+        return {
+          label: 'Alert center',
+          value: pendingApprovalsCount,
+          detail: 'Keep reminders and delivery channels aligned with your approval workload.',
+        };
+      case 'system':
+        return {
+          label: 'Global directory',
+          value: users.length,
+          detail: 'Manage users, assets, room access, and platform-wide settings from one place.',
+        };
+      default:
+        return {
+          label: 'Overview',
+          value: totalAvailableGear,
+          detail: 'Track inventory, requests, and room activity from a single control surface.',
+        };
+    }
+  }, [activeRooms.length, currentFloor, mgmtTab, pendingApprovalsCount, reportData.history.length, reportData.usage.length, storageRooms.length, storageUnitsCount, totalAvailableGear, users.length]);
 
   const selectedItemAvailability = useMemo(() => {
     if (!selectedItem) return null;
@@ -819,10 +928,18 @@ const DashboardPage: React.FC = () => {
   }, [floors]);
 
   const ManagementPanel = (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="p-4 sm:p-6 border-b border-[#f5f5f7] dark:border-[#303030] shrink-0 space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Management</h2>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="space-y-4 border-b border-[#f5f5f7] p-4 shrink-0 dark:border-[#303030] sm:space-y-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Management</h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Keep rooms, approvals, storage, and reporting in sync without leaving the dashboard.
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full border border-[#d2d2d7] bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#0066cc] dark:border-[#303030] dark:bg-[#252527] dark:text-[#8ab7ff]">
+            {currentFloor?.name || 'No floor'}
+          </span>
         </div>
         <div className="grid grid-cols-1 gap-1 rounded-xl border border-[#d2d2d7] bg-[#f5f5f7] p-1 dark:border-[#303030] dark:bg-[#1d1d1f] sm:grid-cols-3 shrink-0">
           <button onClick={() => { setViewMode('3d'); setShowAllUnits(false); }} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === '3d' && !showAllUnits ? 'bg-white dark:bg-[#303030] shadow-sm text-[#1d1d1f] dark:text-[#f5f5f7]' : 'text-[#86868b]'}`}>{isTeacher ? 'My Rooms' : '3D View'}</button>
@@ -831,29 +948,71 @@ const DashboardPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
-          <StatPill icon={<Package size={16} />} label="Available gear" value={groupedEquipment.reduce((acc, g) => acc + (g.availableQuantity || 0), 0)} color="bg-emerald-500" />
-          <StatPill icon={<History size={16} />} label="My requests" value={requests?.length || 0} color="bg-blue-500" />
-          <StatPill icon={<CalendarClock size={16} />} label="Queue status" value={requests ? requests.filter(r => r.status === 'pending').length : 0} color="bg-amber-500" />
+          {managementStats.map((stat) => (
+            <StatPill
+              key={stat.key}
+              icon={stat.icon}
+              label={stat.label}
+              value={stat.value}
+              color={stat.color}
+            />
+          ))}
         </div>
 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(108px,1fr))] gap-2 rounded-2xl border border-[#d2d2d7] bg-[#f5f5f7] p-2 shadow-sm dark:border-[#303030] dark:bg-[#1d1d1f]">
+        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-[#d2d2d7] bg-[#f5f5f7] p-2 shadow-sm dark:border-[#303030] dark:bg-[#1d1d1f] sm:grid-cols-3">
           {managementTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setMgmtTab(tab.id)}
-              className={`min-h-[46px] rounded-xl px-3 py-2 text-center text-[8px] font-black uppercase tracking-[0.18em] transition-all sm:text-[9px] sm:tracking-[0.22em] ${
+              className={`min-h-[72px] rounded-xl px-3 py-3 text-left transition-all ${
                 mgmtTab === tab.id
                   ? 'bg-white text-[#0066cc] shadow-md dark:bg-[#303030]'
                   : 'text-[#86868b] hover:bg-white/70 hover:text-[#1d1d1f] dark:hover:bg-[#2a2a2d] dark:hover:text-white'
               }`}
             >
-              {tab.label}
+              <div className="flex items-start gap-3">
+                <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                  mgmtTab === tab.id
+                    ? 'bg-[#0066cc]/10 text-[#0066cc] dark:bg-[#0066cc]/15'
+                    : 'bg-white/80 text-[#86868b] dark:bg-black/20'
+                }`}>
+                  {tab.icon}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] sm:text-[10px]">{tab.label}</p>
+                  <p className="mt-1 text-[10px] font-medium normal-case tracking-normal text-slate-500 dark:text-slate-400">
+                    {tab.description}
+                  </p>
+                </div>
+              </div>
             </button>
           ))}
         </div>
+
+        <div className="rounded-3xl border border-[#d2d2d7] bg-white/80 p-4 shadow-sm dark:border-[#303030] dark:bg-[#252527]/80">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#86868b]">Current Focus</p>
+              <h3 className="mt-2 text-sm font-black uppercase tracking-[0.18em] text-slate-900 dark:text-white">
+                {activeManagementTab.label}
+              </h3>
+              <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                {activeManagementSummary.detail}
+              </p>
+            </div>
+            <div className="shrink-0 rounded-2xl bg-[#f5f7fb] px-3 py-2 text-right dark:bg-black/20">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#86868b]">
+                {activeManagementSummary.label}
+              </p>
+              <p className="mt-1 text-2xl font-black text-[#1d1d1f] dark:text-[#f5f5f7]">
+                {activeManagementSummary.value}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6">
+      <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
         {mgmtTab === 'spatial' && (
           <div className="space-y-6">
             {isAdmin && floors.length > 0 && (
@@ -1652,10 +1811,10 @@ const DashboardPage: React.FC = () => {
             <X size={20} />
           </button>
 
-          <div className="h-full flex flex-col relative overflow-hidden lg:rounded-[32px] pt-14 lg:pt-0">
+          <div className="relative flex h-full min-h-0 flex-col overflow-hidden pt-14 lg:rounded-[32px] lg:pt-0">
             {(!isSidebarCollapsed || isMobileMenuOpen) && (
-              <div className="h-full flex flex-col">
-                <div className="flex-1 overflow-hidden">
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="flex-1 min-h-0 overflow-hidden">
                   {isManager ? ManagementPanel : UserOverviewPanel}
                 </div>
 
