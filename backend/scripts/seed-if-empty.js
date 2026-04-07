@@ -15,14 +15,24 @@ const run = (command, args, cwd) => {
   }
 };
 
-const main = async () => {
-  const client = new Client({
+const createClient = () => {
+  if (process.env.DATABASE_URL) {
+    return new Client({
+      connectionString: process.env.DATABASE_URL
+    });
+  }
+
+  return new Client({
     host: process.env.DB_HOST || '127.0.0.1',
     port: Number(process.env.DB_PORT || 5432),
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     database: process.env.DB_NAME || 'school_inventory'
   });
+};
+
+const main = async () => {
+  const client = createClient();
 
   try {
     await client.connect();
