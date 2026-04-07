@@ -958,18 +958,18 @@ const DashboardPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-[#d2d2d7] bg-[#f5f5f7] p-2 shadow-sm dark:border-[#303030] dark:bg-[#1d1d1f] sm:grid-cols-3">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(132px,1fr))] gap-2 rounded-2xl border border-[#d2d2d7] bg-[#f5f5f7] p-2 shadow-sm dark:border-[#303030] dark:bg-[#1d1d1f]">
           {managementTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setMgmtTab(tab.id)}
-              className={`min-h-[72px] rounded-xl px-3 py-3 text-left transition-all ${
+              className={`min-h-[92px] rounded-xl px-3 py-3 text-left transition-all ${
                 mgmtTab === tab.id
                   ? 'bg-white text-[#0066cc] shadow-md dark:bg-[#303030]'
                   : 'text-[#86868b] hover:bg-white/70 hover:text-[#1d1d1f] dark:hover:bg-[#2a2a2d] dark:hover:text-white'
               }`}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex h-full flex-col items-start gap-2">
                 <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
                   mgmtTab === tab.id
                     ? 'bg-[#0066cc]/10 text-[#0066cc] dark:bg-[#0066cc]/15'
@@ -978,8 +978,8 @@ const DashboardPage: React.FC = () => {
                   {tab.icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] sm:text-[11px]">{tab.label}</p>
-                  <p className="mt-1 text-[11px] font-medium normal-case tracking-normal text-slate-500 dark:text-slate-400">
+                  <p className="text-[10px] font-black uppercase tracking-[0.14em] leading-tight sm:text-[11px]">{tab.label}</p>
+                  <p className="mt-1 text-[11px] leading-5 font-medium normal-case tracking-normal text-slate-500 dark:text-slate-400">
                     {tab.description}
                   </p>
                 </div>
