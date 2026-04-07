@@ -927,9 +927,9 @@ const DashboardPage: React.FC = () => {
   }, [floors]);
 
   const ManagementPanel = (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+    <div className="flex flex-col lg:h-full lg:min-h-0 lg:overflow-hidden">
       <div className="space-y-4 border-b border-[#f5f5f7] p-4 shrink-0 dark:border-[#303030] sm:space-y-5 sm:p-6">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
           <div className="min-w-0">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Management</h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -989,7 +989,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         <div className="rounded-3xl border border-[#d2d2d7] bg-white/80 p-4 shadow-sm dark:border-[#303030] dark:bg-[#252527]/80">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
             <div className="min-w-0">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#86868b]">Current Focus</p>
               <h3 className="mt-2 text-sm font-black uppercase tracking-[0.18em] text-slate-900 dark:text-white">
@@ -1011,7 +1011,7 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+      <div className="custom-scrollbar p-4 sm:p-6 lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
         {mgmtTab === 'spatial' && (
           <div className="space-y-6">
             {isAdmin && floors.length > 0 && (
@@ -1591,7 +1591,7 @@ const DashboardPage: React.FC = () => {
   );
 
   const UserOverviewPanel = (
-    <div className="h-full flex flex-col gap-6 p-4 sm:gap-8 sm:p-6">
+    <div className="flex flex-col gap-6 p-4 sm:gap-8 sm:p-6 lg:h-full">
       <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2 underline decoration-[#0066cc] decoration-4 underline-offset-8">My Space</h2>
 
       <div className="grid grid-cols-1 gap-1 rounded-xl border border-[#d2d2d7] bg-[#f5f5f7] p-1 dark:border-[#303030] dark:bg-[#1d1d1f] shrink-0 sm:grid-cols-2">
@@ -1605,7 +1605,7 @@ const DashboardPage: React.FC = () => {
         <StatPill icon={<CalendarClock size={18} />} label="Queue status" value={requests ? requests.filter(r => r.status === 'pending').length : 0} color="bg-amber-500" />
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 mt-4">
+      <div className="custom-scrollbar pr-2 mt-4 lg:flex-1 lg:overflow-y-auto">
         <p className="text-[10px] font-black uppercase tracking-widest text-[#86868b] mb-4">Current Claims</p>
         <div className="flex flex-col gap-4">
           {requests && requests.length > 0 ? (
@@ -1647,8 +1647,8 @@ const DashboardPage: React.FC = () => {
   );
 
   const SidebarExpandedContent = (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex-1 min-h-0 overflow-hidden">
+    <div className="flex flex-col lg:h-full lg:min-h-0">
+      <div className="lg:flex-1 lg:min-h-0 lg:overflow-hidden">
         {isManager ? ManagementPanel : UserOverviewPanel}
       </div>
       {SidebarActions}
@@ -1657,7 +1657,7 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className={theme === 'dark' ? 'dark' : 'light'}>
-      <div className="min-h-screen relative overflow-hidden bg-[#f5f5f7] dark:bg-[#000000] transition-colors duration-500">
+      <div className="relative min-h-screen overflow-x-hidden bg-[#f5f5f7] transition-colors duration-500 dark:bg-[#000000] lg:overflow-hidden">
         <InteractiveBackground theme={theme} />
 
         <div
@@ -1803,7 +1803,7 @@ const DashboardPage: React.FC = () => {
             </AnimatePresence>
           </div>
 
-          <div className="mt-6 overflow-hidden rounded-[28px] border border-[#d2d2d7] bg-white/95 shadow-xl backdrop-blur-2xl dark:border-[#303030] dark:bg-[#1d1d1f]/95 lg:hidden">
+          <div className="mt-6 rounded-[28px] border border-[#d2d2d7] bg-white/95 shadow-xl backdrop-blur-2xl dark:border-[#303030] dark:bg-[#1d1d1f]/95 lg:hidden">
             {SidebarExpandedContent}
           </div>
         </div>
