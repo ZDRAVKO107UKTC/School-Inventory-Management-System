@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const { spawn, spawnSync } = require('child_process');
 
 const rootDir = path.join(__dirname, '..');
@@ -22,6 +23,18 @@ const run = (command, args, cwd) => {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const ensureDependencies = (cwd, label) => {
+  const nodeModulesDir = path.join(cwd, 'node_modules');
+
+  if (fs.existsSync(nodeModulesDir)) {
+    console.log(`[dev-up] ${label} dependencies already installed.`);
+    return;
+  }
+
+  console.log(`[dev-up] installing ${label} dependencies...`);
+  run(npmCmd, ['install'], cwd);
+};
+
 const start = (command, args, cwd) => {
   return spawn(command, args, {
     cwd,
@@ -34,11 +47,8 @@ const main = async () => {
   console.log('[dev-up] starting postgres container...');
   run(dockerCmd, ['compose', 'up', '-d', 'postgres'], backendDir);
 
-  console.log('[dev-up] installing backend dependencies...');
-  run(npmCmd, ['install'], backendDir);
-
-  console.log('[dev-up] installing frontend dependencies...');
-  run(npmCmd, ['install'], frontendDir);
+  ensureDependencies(backendDir, 'backend');
+  ensureDependencies(frontendDir, 'frontend');
 
   console.log('[dev-up] running database migrations...');
   run(npmCmd, ['run', 'db:migrate'], backendDir);
@@ -46,8 +56,8 @@ const main = async () => {
   console.log('[dev-up] seeding database if empty...');
   run('node', ['scripts/seed-if-empty.js'], backendDir);
 
-  console.log('[dev-up] starting monolithic backend...');
-  const backendProc = start(npmCmd, ['run', 'start'], backendDir);
+  console.log('[dev-up] starting backend microservices...');
+  const backendProc = start(npmCmd, ['run', 'microservices:start'], backendDir);
 
   await wait(3500);
 

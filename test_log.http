@@ -1,2 +1,0 @@
-GET http://localhost:5000/api/requests/history/equipment/1
-Authorization: Bearer {{authToken}}

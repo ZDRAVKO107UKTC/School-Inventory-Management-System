@@ -4,11 +4,5 @@
   "scripts": {
     "dev": "node scripts/dev-up.js",
     "db:reset": "npm --prefix backend run db:reset"
-  },
-  "dependencies": {
-    "express-rate-limit": "^8.3.1",
-    "express-validator": "^7.3.1",
-    "helmet": "^8.1.0",
-    "xss": "^1.0.15"
   }
 }

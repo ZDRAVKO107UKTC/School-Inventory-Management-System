@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+frontend/node_modules/
 backend/node_modules/
 
 # Environment variables
@@ -36,6 +37,11 @@ Thumbs.db
 dist/
 build/
 *.tsbuildinfo
+frontend/.vite/
+frontend/.vite*/
+frontend/.vite-*/
+frontend/.vite_clean/
+frontend/.vite_cache*/
 
 # Database
 *.sqlite

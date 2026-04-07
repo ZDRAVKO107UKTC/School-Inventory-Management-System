@@ -7,26 +7,29 @@ const { startNotificationReminderJob } = require('./jobs/notificationReminderJob
 const { startBackupJob } = require('./jobs/backupJob');
 const { startTokenCleanupJob } = require('./jobs/tokenCleanup');
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT || process.env.SERVICE_PORT || 5000);
+const enableBackgroundJobs = process.env.ENABLE_BACKGROUND_JOBS !== 'false';
 
 async function startServer() {
   try {
-    // Authenticate database connection
     await db.sequelize.authenticate();
-    console.log('Database connected successfully.');
+    console.log('[combined-backend] database connected successfully');
 
-    // Initialize background jobs
-    startNotificationReminderJob();
-    startBackupJob();
-    startTokenCleanupJob();
+    if (enableBackgroundJobs) {
+      startNotificationReminderJob();
+      startBackupJob();
+      startTokenCleanupJob();
+      console.log('[combined-backend] background jobs enabled');
+    } else {
+      console.log('[combined-backend] background jobs disabled');
+    }
 
-    // Start Express server
     app.listen(PORT, () => {
-      console.log(`Monolithic server is running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`[combined-backend] listening on port ${PORT}`);
+      console.log(`[combined-backend] environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (error) {
-    console.error('Unable to start the server:', error);
+    console.error('[combined-backend] failed to start:', error);
     process.exit(1);
   }
 }

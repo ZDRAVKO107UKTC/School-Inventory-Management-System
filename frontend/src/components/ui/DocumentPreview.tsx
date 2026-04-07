@@ -27,10 +27,15 @@ export const DocumentPreview: React.FC<Props> = ({ url, format, className = '', 
   const isPdf = lowerFormat === 'pdf' || /\.pdf($|\?)/i.test(lowerUrl);
   const isExcel = ['xls', 'xlsx', 'csv'].includes(lowerFormat) || /\.(xls|xlsx|csv)($|\?)/i.test(lowerUrl);
   const isWord = ['doc', 'docx'].includes(lowerFormat) || /\.(doc|docx)($|\?)/i.test(lowerUrl);
-  const isDoc = isPdf || isExcel || isWord || ['ppt', 'pptx', 'txt'].includes(lowerFormat) || /\.(ppt|pptx|txt)($|\?)/i.test(lowerUrl);
+  const isAbsoluteHttpUrl = /^https?:\/\//i.test(processedUrl);
+  const canUseGoogleViewer = !isPdf && isAbsoluteHttpUrl;
 
-  // Google Docs Viewer URL format
-  const iframeUrl = isDoc ? `https://docs.google.com/viewer?url=${encodeURIComponent(processedUrl)}&embedded=true` : processedUrl;
+  // Use the browser's PDF viewer for local PDFs; fall back to Google Viewer only for absolute public URLs.
+  const iframeUrl = isPdf
+    ? processedUrl
+    : canUseGoogleViewer
+      ? `https://docs.google.com/viewer?url=${encodeURIComponent(processedUrl)}&embedded=true`
+      : processedUrl;
 
   // Render Image
   if (isImage) {
@@ -74,20 +79,22 @@ export const DocumentPreview: React.FC<Props> = ({ url, format, className = '', 
   }
 
   // Render Full Inline Iframe Document
-  if (isDoc) {
+  if (isPdf || canUseGoogleViewer) {
     return (
       <div className={`relative w-full h-full overflow-hidden bg-slate-50 dark:bg-[#1c1c1e] group ${className}`}>
         {!loaded && !error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
             <Loader2 className="animate-spin text-[#0066cc]" size={28} />
-            <span className="text-[10px] font-black uppercase text-[#86868b] tracking-widest">Loading Document Viewer</span>
+            <span className="text-[10px] font-black uppercase text-[#86868b] tracking-widest">
+              {isPdf ? 'Loading PDF Preview' : 'Loading Document Viewer'}
+            </span>
           </div>
         )}
         <iframe 
           src={iframeUrl} 
           className={`w-full h-full border-0 transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setLoaded(true)}
-          title="Document Preview"
+          title={isPdf ? 'PDF Preview' : 'Document Preview'}
         />
         {/* Hover open-in-new-tab button */}
         <button 

@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ZoomIn, ZoomOut, Save, RotateCcw, Trash2, Plus } from 'lucide-react';
 import { Room, createRoom, updateRoom } from '../../services/spatialService';
-// @ts-ignore
+// @ts-expect-error polybooljs does not ship types in this project.
 import PolyBool from 'polybooljs';
 
 interface FloorPlanMapProps {

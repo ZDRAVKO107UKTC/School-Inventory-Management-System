@@ -11,13 +11,16 @@ interface Props {
   isAdmin: boolean;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+const API_BASE =
+  import.meta.env.VITE_API_URL?.replace('/api', '')
+  || (typeof window !== 'undefined' ? window.location.origin : '');
 
 /** Resolve a document URL — Cloudinary URLs are absolute, but local fallbacks start with /uploads */
 const resolveDocUrl = (url: string) => {
   if (!url) return url;
   if (url.startsWith('http')) return url;
-  return `${API_BASE}${url}`;
+  if (url.startsWith('/')) return `${API_BASE}${url}`;
+  return `${API_BASE}/${url}`;
 };
 
 export const GlobalDocuments: React.FC<Props> = ({ token, isAdmin }) => {

@@ -1,6 +1,9 @@
 # School Inventory Management System
 
-This project is now structured as a **microservices backend** with a React frontend.
+This project is structured as a React frontend with two backend runtime modes:
+
+- **Microservices mode** for local development
+- **Combined backend mode** for lightweight production deployments such as Synology NAS
 
 ## Architecture
 
@@ -85,6 +88,41 @@ This starts:
 - all backend services
 - API gateway
 
+## Synology NAS Deployment
+
+For a Synology DS723+ with **2 GB RAM**, use the lightweight deployment in [compose.synology.yml](C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System/compose.synology.yml) instead of the development microservices stack. It runs:
+
+- `postgres`
+- one combined backend container
+- one nginx frontend container
+
+### Files Added For NAS Deployment
+
+- [compose.synology.yml](C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System/compose.synology.yml)
+- [.env.synology.example](C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System/.env.synology.example)
+- [backend/Dockerfile](C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System/backend/Dockerfile)
+- [frontend/Dockerfile](C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System/frontend/Dockerfile)
+- [frontend/nginx.conf](C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System/frontend/nginx.conf)
+
+### Setup Steps
+
+1. Copy `.env.synology.example` to `.env` in the project root.
+2. Change `POSTGRES_PASSWORD`, `JWT_SECRET`, `FRONTEND_URL`, `ALLOWED_ORIGINS`, and `PASSWORD_RESET_URL`.
+3. If you are using Synology HTTPS reverse proxy, set:
+   `COOKIE_SECURE=true`
+   `TRUST_PROXY=true`
+   and make `FRONTEND_URL` / `ALLOWED_ORIGINS` use your final `https://...` hostname.
+4. In Synology Container Manager, create a **Project** from [compose.synology.yml](C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System/compose.synology.yml).
+5. Open `http://YOUR_NAS_IP:8080` or the hostname you configured through Synology reverse proxy.
+
+### CLI Alternative
+
+From the project root:
+```bash
+cp .env.synology.example .env
+docker compose -f compose.synology.yml up -d --build
+```
+
 ## Database Reset
 
 If you want a clean database with fresh demo data:
@@ -135,5 +173,5 @@ Admin integration endpoints:
 
 ## Runtime Mode
 
-- Backend is **microservices-only**.
-- Monolith entrypoint `backend/server.js` has been removed.
+- Local development uses the microservices stack.
+- Synology / low-memory production deployments use the combined backend runtime at [backend/src/server.js](C:/Users/zdrav/Documents/GitHub/School-Inventory-Management-System/backend/src/server.js).

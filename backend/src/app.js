@@ -10,18 +10,31 @@ const { mountServiceBoundaries } = require('./serviceBoundaries');
 validateEnvironment();
 
 const app = express();
+app.set('trust proxy', process.env.TRUST_PROXY === 'true' ? 1 : false);
 
 // ============= CORS CONFIGURATION =============
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : [
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:3000',
-    ];
+const configuredOrigins = new Set([
+  ...(process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
+    : [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:3000',
+      ]),
+  process.env.FRONTEND_URL ? process.env.FRONTEND_URL.trim().replace(/\/+$/, '') : null,
+].filter(Boolean));
+
+const allowAllOrigins = process.env.ALLOWED_ORIGINS?.trim() === '*';
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin(origin, callback) {
+    if (!origin || allowAllOrigins || configuredOrigins.has(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

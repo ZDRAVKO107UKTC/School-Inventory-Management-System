@@ -13,6 +13,44 @@ const {
 const {validationResult} = require('express-validator');
 const xss = require('xss');
 
+const parseBoolean = (value, fallback = false) => {
+    if (typeof value !== 'string') {
+        return fallback;
+    }
+
+    switch (value.trim().toLowerCase()) {
+        case 'true':
+        case '1':
+        case 'yes':
+        case 'on':
+            return true;
+        case 'false':
+        case '0':
+        case 'no':
+        case 'off':
+            return false;
+        default:
+            return fallback;
+    }
+};
+
+const getRefreshTokenCookieOptions = () => {
+    const secure = parseBoolean(process.env.COOKIE_SECURE, process.env.NODE_ENV === 'production');
+    const sameSite = process.env.COOKIE_SAME_SITE || 'strict';
+
+    return {
+        httpOnly: true,
+        secure,
+        sameSite,
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    };
+};
+
+const getRefreshTokenClearOptions = () => {
+    const { httpOnly, secure, sameSite } = getRefreshTokenCookieOptions();
+    return { httpOnly, secure, sameSite };
+};
+
 const getFrontendCallbackUrl = (callbackPath, params = {}) => {
     const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '');
     const url = new URL(callbackPath, `${frontendUrl}/`);
@@ -58,12 +96,7 @@ const login = async (req, res, next) => {
     try {
         const data = await loginUser(req.body);
 
-        res.cookie('refreshToken', data.refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
+        res.cookie('refreshToken', data.refreshToken, getRefreshTokenCookieOptions());
 
         return res.status(200).json({
             message: "Login successful",
@@ -108,7 +141,7 @@ const logout = async (req, res, next) => {
         }
 
         const result = await logoutUser(refreshToken);
-        res.clearCookie('refreshToken');
+        res.clearCookie('refreshToken', getRefreshTokenClearOptions());
 
         return res.status(200).json(result);
     } catch (error) {
@@ -162,12 +195,7 @@ const googleExchange = async (req, res, next) => {
         const { code } = req.body || {};
         const data = await loginWithGoogleCode(code);
 
-        res.cookie('refreshToken', data.refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
+        res.cookie('refreshToken', data.refreshToken, getRefreshTokenCookieOptions());
 
         return res.status(200).json({
             message: 'Google authentication successful',
@@ -192,12 +220,7 @@ const telegramVerify = async (req, res, next) => {
     try {
         const data = await loginWithTelegramAuth(req.body || {});
 
-        res.cookie('refreshToken', data.refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
+        res.cookie('refreshToken', data.refreshToken, getRefreshTokenCookieOptions());
 
         return res.status(200).json({
             message: 'Telegram authentication successful',
@@ -217,7 +240,7 @@ const resetPassword = async (req, res, next) => {
 
     try {
         const result = await resetPasswordService(req.body);
-        res.clearCookie('refreshToken');
+        res.clearCookie('refreshToken', getRefreshTokenClearOptions());
 
         return res.status(200).json(result);
     } catch (error) {

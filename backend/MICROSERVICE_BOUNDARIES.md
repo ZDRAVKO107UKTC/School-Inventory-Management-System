@@ -92,9 +92,9 @@ Frontend should only call gateway (`http://127.0.0.1:5000` in local dev).
 - `cd backend`
 - `docker compose -f docker-compose.microservices.yml up -d`
 
-## Monolith Status
+## Combined Runtime Status
 
-- Monolith runtime has been removed.
+- Local development still uses the microservices stack.
+- Lightweight deployments can use the combined backend runtime at `backend/src/server.js`.
 - `backend/server.js` no longer exists.
-- Backend start scripts point only to microservices orchestration.
 

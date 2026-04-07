@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 // https://vitejs.dev/config/
+const proxyTarget = process.env.VITE_API_URL || 'http://localhost:5000';
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -16,11 +18,11 @@ export default defineConfig({
     allowedHosts: ['.trycloudflare.com'],
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:5000',
+        target: proxyTarget,
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'http://localhost:5000',
+        target: proxyTarget,
         changeOrigin: true,
       },
     },

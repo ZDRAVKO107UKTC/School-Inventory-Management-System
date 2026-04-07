@@ -44,5 +44,4 @@ coverage/
 .nyc_output/
 
 # Dependencies
-package-lock.json
 yarn.lock
