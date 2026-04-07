@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Menu, Search, LogOut, Package, History, CalendarClock, Building, ChevronDown, Plus, Trash2, X, Download, ListTodo, Square, MinusCircle, Edit, CheckCircle2, ArchiveX, XCircle, FileJson, MousePointer2, LayoutPanelLeft, PenTool, MapPin, Archive, Clock, FileSpreadsheet, Loader2, ScanLine, QrCode, ClipboardCheck, Info, BarChart3, Bell, AlertCircle } from 'lucide-react';
+import { Search, LogOut, Package, History, CalendarClock, Building, ChevronDown, Plus, Trash2, X, Download, ListTodo, Square, MinusCircle, Edit, CheckCircle2, ArchiveX, XCircle, FileJson, MousePointer2, LayoutPanelLeft, PenTool, MapPin, Archive, Clock, FileSpreadsheet, Loader2, ScanLine, QrCode, ClipboardCheck, Info, BarChart3, Bell, AlertCircle } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { ThemeToggle } from '@/components/auth/ThemeToggle';
 import { InteractiveBackground } from '@/components/auth/InteractiveBackground';
@@ -191,7 +191,6 @@ const DashboardPage: React.FC = () => {
   // Management Logic
   const [isAssigningMode, setIsAssigningMode] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAllUnits, setShowAllUnits] = useState(false);
   const [mgmtTab, setMgmtTab] = useState<ManagementTab>('spatial');
   const [reportData, setReportData] = useState<{ usage: any[]; history: any[] }>({ usage: [], history: [] });
@@ -937,14 +936,14 @@ const DashboardPage: React.FC = () => {
               Keep rooms, approvals, storage, and reporting in sync without leaving the dashboard.
             </p>
           </div>
-          <span className="shrink-0 rounded-full border border-[#d2d2d7] bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#0066cc] dark:border-[#303030] dark:bg-[#252527] dark:text-[#8ab7ff]">
+          <span className="shrink-0 rounded-full border border-[#d2d2d7] bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-[#0066cc] dark:border-[#303030] dark:bg-[#252527] dark:text-[#8ab7ff]">
             {currentFloor?.name || 'No floor'}
           </span>
         </div>
         <div className="grid grid-cols-1 gap-1 rounded-xl border border-[#d2d2d7] bg-[#f5f5f7] p-1 dark:border-[#303030] dark:bg-[#1d1d1f] sm:grid-cols-3 shrink-0">
-          <button onClick={() => { setViewMode('3d'); setShowAllUnits(false); }} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === '3d' && !showAllUnits ? 'bg-white dark:bg-[#303030] shadow-sm text-[#1d1d1f] dark:text-[#f5f5f7]' : 'text-[#86868b]'}`}>{isTeacher ? 'My Rooms' : '3D View'}</button>
-          <button onClick={() => { setViewMode('3d'); setShowAllUnits(true); }} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === '3d' && showAllUnits ? 'bg-white dark:bg-[#303030] shadow-sm text-[#1d1d1f] dark:text-[#f5f5f7]' : 'text-[#86868b]'}`}>See All</button>
-          <button onClick={() => setViewMode('map')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === 'map' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#1d1d1f] dark:text-[#f5f5f7]' : 'text-[#86868b]'}`}>Map View</button>
+          <button onClick={() => { setViewMode('3d'); setShowAllUnits(false); }} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wide transition-all ${viewMode === '3d' && !showAllUnits ? 'bg-white dark:bg-[#303030] shadow-sm text-[#1d1d1f] dark:text-[#f5f5f7]' : 'text-[#86868b]'}`}>{isTeacher ? 'My Rooms' : '3D View'}</button>
+          <button onClick={() => { setViewMode('3d'); setShowAllUnits(true); }} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wide transition-all ${viewMode === '3d' && showAllUnits ? 'bg-white dark:bg-[#303030] shadow-sm text-[#1d1d1f] dark:text-[#f5f5f7]' : 'text-[#86868b]'}`}>See All</button>
+          <button onClick={() => setViewMode('map')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wide transition-all ${viewMode === 'map' ? 'bg-white dark:bg-[#303030] shadow-sm text-[#1d1d1f] dark:text-[#f5f5f7]' : 'text-[#86868b]'}`}>Map View</button>
         </div>
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
@@ -979,8 +978,8 @@ const DashboardPage: React.FC = () => {
                   {tab.icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] sm:text-[10px]">{tab.label}</p>
-                  <p className="mt-1 text-[10px] font-medium normal-case tracking-normal text-slate-500 dark:text-slate-400">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] sm:text-[11px]">{tab.label}</p>
+                  <p className="mt-1 text-[11px] font-medium normal-case tracking-normal text-slate-500 dark:text-slate-400">
                     {tab.description}
                   </p>
                 </div>
@@ -992,7 +991,7 @@ const DashboardPage: React.FC = () => {
         <div className="rounded-3xl border border-[#d2d2d7] bg-white/80 p-4 shadow-sm dark:border-[#303030] dark:bg-[#252527]/80">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#86868b]">Current Focus</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#86868b]">Current Focus</p>
               <h3 className="mt-2 text-sm font-black uppercase tracking-[0.18em] text-slate-900 dark:text-white">
                 {activeManagementTab.label}
               </h3>
@@ -1001,7 +1000,7 @@ const DashboardPage: React.FC = () => {
               </p>
             </div>
             <div className="shrink-0 rounded-2xl bg-[#f5f7fb] px-3 py-2 text-right dark:bg-black/20">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#86868b]">
+              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#86868b]">
                 {activeManagementSummary.label}
               </p>
               <p className="mt-1 text-2xl font-black text-[#1d1d1f] dark:text-[#f5f5f7]">
@@ -1623,21 +1622,48 @@ const DashboardPage: React.FC = () => {
     </div>
   );
 
+  const SidebarActions = (
+    <div className="border-t border-[#f5f5f7] bg-[#fcfcfd] p-4 dark:border-[#303030] dark:bg-black/10 sm:p-6">
+      <div className="flex flex-col gap-2 border-t border-[#f5f5f7] pt-4 dark:border-[#303030] sm:pt-6">
+        <button
+          onClick={() => setIsScannerOpen(true)}
+          className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl bg-gradient-to-br from-[#1d1d1f] to-[#3a3a3c] dark:from-[#0066cc] dark:to-[#004e9c] text-white hover:shadow-xl hover:shadow-blue-500/10 transition-all font-bold text-[11px] uppercase tracking-wide active:scale-95"
+        >
+          <div className="p-1.5 bg-white/10 rounded-lg">
+            <ScanLine size={16} />
+          </div>
+          <span>Scan Barcode</span>
+        </button>
+
+        <button
+          onClick={onSignOut}
+          className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all font-black text-[11px] uppercase tracking-wide border border-rose-100 dark:border-rose-900/30 shadow-sm active:scale-95"
+        >
+          <LogOut size={18} />
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  const SidebarExpandedContent = (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {isManager ? ManagementPanel : UserOverviewPanel}
+      </div>
+      {SidebarActions}
+    </div>
+  );
+
   return (
     <div className={theme === 'dark' ? 'dark' : 'light'}>
       <div className="min-h-screen relative overflow-hidden bg-[#f5f5f7] dark:bg-[#000000] transition-colors duration-500">
         <InteractiveBackground theme={theme} />
 
         <div
-          className={`relative z-10 w-full h-screen flex flex-col pt-4 sm:pt-8 pb-4 px-4 sm:px-8 transition-all duration-500 ease-in-out ${isSidebarCollapsed ? 'lg:pr-[88px]' : 'lg:pr-[344px] xl:pr-[444px]'
+          className={`relative z-10 flex min-h-[100dvh] w-full flex-col px-4 pb-4 pt-4 transition-all duration-500 ease-in-out sm:px-8 sm:pt-8 lg:h-screen ${isSidebarCollapsed ? 'lg:pr-[88px]' : 'lg:pr-[344px] xl:pr-[444px]'
             }`}
         >
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="lg:hidden fixed top-6 right-6 z-[70] p-3 bg-white dark:bg-[#1d1d1f] rounded-2xl border border-[#d2d2d7] dark:border-[#303030] shadow-xl text-[#1d1d1f] dark:text-[#f5f5f7] active:scale-95 transition-all"
-          >
-            <Menu size={20} />
-          </button>
           <div className="flex flex-col gap-6 sm:gap-8 mb-8 sm:mb-12 shrink-0 relative z-50 w-full">
             <div className="space-y-1">
               <h1 className="text-3xl sm:text-5xl font-black text-[#1d1d1f] dark:text-[#f5f5f7] tracking-tight leading-tight">
@@ -1702,10 +1728,10 @@ const DashboardPage: React.FC = () => {
             )}
           </AnimatePresence>
 
-          <div className="relative flex-1 flex flex-col min-h-0 min-w-0">
+          <div className="relative flex flex-1 flex-col min-h-[360px] min-w-0 lg:min-h-0">
             <AnimatePresence mode="wait">
               {viewMode === '3d' ? (
-                <motion.div key="3d" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} className="flex-1 flex flex-col h-full min-h-0">
+                <motion.div key="3d" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} className="flex flex-1 flex-col h-full min-h-[360px] lg:min-h-0">
                   {loadingEquipment ? (
                     <div className="flex-1 flex items-center justify-center"><div className="w-12 h-12 border-4 border-[#0066cc] border-t-transparent rounded-full animate-spin" /></div>
                   ) : groupedEquipment.length === 0 ? (
@@ -1715,14 +1741,14 @@ const DashboardPage: React.FC = () => {
                   )}
                 </motion.div>
               ) : (
-                <motion.div key="map" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col gap-4 max-w-6xl mx-auto w-full px-2 lg:px-4 min-h-0">
-                  <div className="flex items-center justify-between shrink-0">
+                <motion.div key="map" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex flex-1 flex-col gap-4 max-w-6xl mx-auto w-full px-0 sm:px-2 lg:px-4 min-h-[360px] lg:min-h-0">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0">
                     <div className="relative">
-                      <button onClick={() => setIsFloorMenuOpen(!isFloorMenuOpen)} className="flex items-center gap-3 px-6 py-2 bg-white dark:bg-[#1d1d1f] rounded-full border border-[#d2d2d7] dark:border-[#303030] shadow-sm hover:shadow-md font-semibold text-sm">
+                      <button onClick={() => setIsFloorMenuOpen(!isFloorMenuOpen)} className="flex w-full items-center justify-between gap-3 px-5 py-2.5 bg-white dark:bg-[#1d1d1f] rounded-full border border-[#d2d2d7] dark:border-[#303030] shadow-sm hover:shadow-md font-semibold text-sm sm:w-auto">
                         <Building size={16} className="text-[#86868b]" /> {currentFloor?.name || 'Floors'} <ChevronDown size={14} className={isFloorMenuOpen ? 'rotate-180' : ''} />
                       </button>
                       {isFloorMenuOpen && (
-                        <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-[#1d1d1f] border border-[#d2d2d7] dark:border-[#303030] rounded-2xl shadow-xl z-50 overflow-hidden">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1d1d1f] border border-[#d2d2d7] dark:border-[#303030] rounded-2xl shadow-xl z-50 overflow-hidden sm:w-48 sm:right-auto">
                           {floors.map(f => (<button key={f.id} onClick={() => { setCurrentFloorId(f.id); setSelectedRoomId(null); setIsFloorMenuOpen(false); }} className="w-full px-5 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold border-b last:border-0 border-[#f5f5f7] dark:border-[#303030]">{f.name}</button>))}
                           {isAdmin && (
                             <button onClick={handleCreateFloor} className="w-full px-5 py-3 text-left text-[#0066cc] text-[10px] font-black uppercase hover:bg-blue-50 transition-colors">
@@ -1732,18 +1758,18 @@ const DashboardPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {isAdmin && (
                         <button
                           onClick={() => setMapMode(mapMode === 'select' ? 'draw' : 'select')}
-                          className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all shadow-lg hover:scale-105 active:scale-95 ${mapMode === 'draw' ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-[#2c2c2e] text-[#86868b] border border-[#d2d2d7] dark:border-[#303030]'}`}
+                          className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wide transition-all shadow-lg hover:scale-105 active:scale-95 ${mapMode === 'draw' ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-[#2c2c2e] text-[#86868b] border border-[#d2d2d7] dark:border-[#303030]'}`}
                         >
                           <PenTool size={12} className="inline mr-2" />
                           {mapMode === 'draw' ? 'Exit Drawing' : 'Draw Room'}
                         </button>
                       )}
                       {selectedRoomId && (
-                        <button onClick={() => setSelectedRoomId(null)} className="flex items-center gap-2 bg-[#1d1d1f] dark:bg-[#f5f5f7] px-4 py-2 rounded-full text-white dark:text-[#1d1d1f] text-[10px] font-black uppercase tracking-widest shadow-lg">
+                        <button onClick={() => setSelectedRoomId(null)} className="flex items-center gap-2 bg-[#1d1d1f] dark:bg-[#f5f5f7] px-4 py-2 rounded-full text-white dark:text-[#1d1d1f] text-[10px] font-black uppercase tracking-wide shadow-lg">
                           Zone: {currentFloor?.rooms.find(r => r.id === selectedRoomId)?.name} <X size={12} />
                         </button>
                       )}
@@ -1776,25 +1802,15 @@ const DashboardPage: React.FC = () => {
               )}
             </AnimatePresence>
           </div>
+
+          <div className="mt-6 overflow-hidden rounded-[28px] border border-[#d2d2d7] bg-white/95 shadow-xl backdrop-blur-2xl dark:border-[#303030] dark:bg-[#1d1d1f]/95 lg:hidden">
+            {SidebarExpandedContent}
+          </div>
         </div>
 
-
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-md z-[55]"
-            />
-          )}
-        </AnimatePresence>
-
         <aside
-          className={`fixed top-0 bottom-0 right-0 lg:top-6 lg:bottom-6 lg:right-6 bg-white/95 dark:bg-[#1d1d1f]/95 backdrop-blur-2xl border-l lg:border border-[#d2d2d7] dark:border-[#303030] lg:rounded-[32px] shadow-2xl z-[60] lg:z-30 transition-all duration-500 ease-in-out 
-            ${isSidebarCollapsed ? 'lg:w-[64px]' : 'lg:w-[320px] xl:w-[400px]'}
-            ${isMobileMenuOpen ? 'w-[320px] translate-x-0 opacity-100' : 'w-[320px] translate-x-full lg:translate-x-0 opacity-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto'}
+          className={`hidden fixed top-6 bottom-6 right-6 z-30 bg-white/95 dark:bg-[#1d1d1f]/95 backdrop-blur-2xl border border-[#d2d2d7] dark:border-[#303030] rounded-[32px] shadow-2xl transition-all duration-500 ease-in-out lg:block
+            ${isSidebarCollapsed ? 'w-[64px]' : 'w-[320px] xl:w-[400px]'}
           `}
         >
           <button
@@ -1804,45 +1820,14 @@ const DashboardPage: React.FC = () => {
             <ChevronDown size={14} className={`text-[#86868b] transition-transform duration-500 ${isSidebarCollapsed ? 'rotate-90' : '-rotate-90'}`} />
           </button>
 
-          <button
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="lg:hidden absolute left-4 top-6 z-[70] p-2 text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white transition-colors"
-          >
-            <X size={20} />
-          </button>
-
           <div className="relative flex h-full min-h-0 flex-col overflow-hidden pt-14 lg:rounded-[32px] lg:pt-0">
-            {(!isSidebarCollapsed || isMobileMenuOpen) && (
+            {!isSidebarCollapsed && (
               <div className="flex h-full min-h-0 flex-col">
-                <div className="flex-1 min-h-0 overflow-hidden">
-                  {isManager ? ManagementPanel : UserOverviewPanel}
-                </div>
-
-                <div className="p-6 border-t border-[#f5f5f7] dark:border-[#303030] bg-[#fcfcfd] dark:bg-black/10">
-                  <div className="flex flex-col gap-2 pt-6 border-t border-[#f5f5f7] dark:border-[#303030]">
-                    <button
-                      onClick={() => setIsScannerOpen(true)}
-                      className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl bg-gradient-to-br from-[#1d1d1f] to-[#3a3a3c] dark:from-[#0066cc] dark:to-[#004e9c] text-white hover:shadow-xl hover:shadow-blue-500/10 transition-all font-bold text-[10px] uppercase tracking-widest active:scale-95"
-                    >
-                      <div className="p-1.5 bg-white/10 rounded-lg">
-                        <ScanLine size={16} />
-                      </div>
-                      <span>Scan Barcode</span>
-                    </button>
-
-                    <button
-                      onClick={onSignOut}
-                      className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all font-black text-[10px] uppercase tracking-widest border border-rose-100 dark:border-rose-900/30 shadow-sm active:scale-95"
-                    >
-                      <LogOut size={18} />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                </div>
+                {SidebarExpandedContent}
               </div>
             )}
 
-            {isSidebarCollapsed && !isMobileMenuOpen && (
+            {isSidebarCollapsed && (
               <div className="flex flex-col items-center py-12 gap-8 h-full">
                 <div className="w-8 h-8 rounded-full bg-[#0066cc] flex items-center justify-center text-white text-[10px] font-black">{user?.username[0].toUpperCase()}</div>
                 <div className="flex-1 flex flex-col gap-6 items-center">
